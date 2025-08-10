@@ -3,11 +3,85 @@ import React, { useMemo } from 'react';
 import { Treemap as RechartsTreemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 
+export interface TreemapNode {
+    name: string;
+    size: number;
+    colorMetric: number;
+    children?: TreemapNode[];
+}
+
 interface TreemapProps {
-    data: { name: string; size: number; colorMetric: number }[];
+    data: TreemapNode[];
     title: string;
     config: DynamicChartConfig;
 }
+
+// Moves a leaf node identified by `nodeName` under a new parent `newParentName`.
+// The operation mutates the tree in place.
+export const moveNode = (
+    nodes: TreemapNode[],
+    nodeName: string,
+    newParentName: string
+): void => {
+    let movingNode: TreemapNode | null = null;
+
+    const remove = (arr: TreemapNode[]): TreemapNode[] =>
+        arr.filter((n) => {
+            if (n.name === nodeName) {
+                movingNode = n;
+                return false;
+            }
+            if (n.children) {
+                n.children = remove(n.children);
+                if (n.children.length === 0) {
+                    n.size = 0;
+                    n.colorMetric = 0;
+                }
+            }
+            return true;
+        });
+
+    const insert = (arr: TreemapNode[]): boolean => {
+        for (const n of arr) {
+            if (n.name === newParentName) {
+                if (!n.children) n.children = [];
+                n.children.push(movingNode!);
+                return true;
+            }
+            if (n.children && insert(n.children)) return true;
+        }
+        return false;
+    };
+
+    // Remove node and then insert under new parent
+    remove(nodes);
+    if (movingNode) insert(nodes);
+};
+
+// Recalculates size and color metrics for the tree.
+// Parents get the sum of child sizes and the average of child color metrics.
+export const updateMetrics = (
+    nodes: TreemapNode[],
+    formula?: (n: TreemapNode) => number
+): void => {
+    const traverse = (node: TreemapNode): { size: number; color: number } => {
+        if (!node.children || node.children.length === 0) {
+            if (formula) node.colorMetric = formula(node);
+            return { size: node.size, color: node.colorMetric };
+        }
+        let totalSize = 0;
+        let totalColor = 0;
+        node.children.forEach((child) => {
+            const { size, color } = traverse(child);
+            totalSize += size;
+            totalColor += color;
+        });
+        node.size = totalSize;
+        node.colorMetric = node.children.length ? totalColor / node.children.length : 0;
+        return { size: node.size, color: node.colorMetric };
+    };
+    nodes.forEach(traverse);
+};
 
 const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', compactDisplay: 'short' });
 
@@ -71,7 +145,14 @@ const CustomTooltip = ({ active, payload, config }: any) => {
 const TreemapChart: React.FC<TreemapProps> = ({ data, title, config }) => {
     const colorMetricRange = useMemo((): [number, number] => {
         if (!data || data.length === 0) return [0, 0];
-        const values = data.map(d => d.colorMetric);
+        const values: number[] = [];
+        const collect = (nodes: TreemapNode[]) => {
+            nodes.forEach((n) => {
+                values.push(n.colorMetric);
+                if (n.children) collect(n.children);
+            });
+        };
+        collect(data);
         return [Math.min(...values), Math.max(...values)];
     }, [data]);
     
