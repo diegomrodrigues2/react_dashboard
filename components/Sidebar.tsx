@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { MenuItem, DataItem } from '../types.ts'; 
 // MenuIcon is no longer needed here as it's moved to TopBar
 
@@ -12,8 +12,39 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ menuItems, activeTabId, onSelectTab, isOpen }) => {
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const handleKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+    id: string
+  ) => {
+    switch (event.key) {
+      case 'ArrowDown': {
+        event.preventDefault();
+        const nextIndex = (index + 1) % menuItems.length;
+        itemRefs.current[nextIndex]?.focus();
+        break;
+      }
+      case 'ArrowUp': {
+        event.preventDefault();
+        const prevIndex = (index - 1 + menuItems.length) % menuItems.length;
+        itemRefs.current[prevIndex]?.focus();
+        break;
+      }
+      case 'Enter':
+      case ' ': {
+        event.preventDefault();
+        onSelectTab(id);
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
   return (
-    <div 
+    <div
       className={`bg-[#002D5A] text-white fixed top-16 left-0 bottom-0 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'w-64 p-4' : 'w-20 p-4'} z-30`} // Added z-30
       aria-label="Menu de navegação principal"
       style={{ height: 'calc(100vh - 4rem)' }} // Ensure it doesn't overlap TopBar
@@ -23,14 +54,17 @@ const Sidebar: React.FC<SidebarProps> = ({ menuItems, activeTabId, onSelectTab, 
       <div className={`${isOpen && menuItems.length > 0 ? 'pt-4' : ''}`}> 
       </div>
       <nav className="space-y-2 flex-grow overflow-y-auto">
-        {menuItems.map((item) => (
+        {menuItems.map((item, index) => (
           <button
             key={item.id}
             onClick={() => onSelectTab(item.id)}
-            className={`w-full flex items-center p-3 rounded-md text-left hover:bg-[#003C73] transition-colors duration-150 
-                        ${isOpen ? 'justify-start space-x-3' : 'justify-center'} 
+            tabIndex={0}
+            onKeyDown={(e) => handleKeyDown(e, index, item.id)}
+            ref={(el) => (itemRefs.current[index] = el)}
+            className={`w-full flex items-center p-3 rounded-md text-left hover:bg-[#003C73] transition-colors duration-150
+                        ${isOpen ? 'justify-start space-x-3' : 'justify-center'}
                         ${activeTabId === item.id ? 'bg-[#00A3E0] text-white' : 'text-gray-300 hover:text-white'}`}
-            title={item.label} 
+            title={item.label}
             aria-label={item.label}
             role="menuitem"
             aria-current={activeTabId === item.id ? 'page' : undefined}
