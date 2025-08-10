@@ -6,6 +6,9 @@
 
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import GridLayout, { WidthProvider, Layout } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 import KpiCard from './charts/KpiCard.tsx';
 import LineChart from './charts/LineChart.tsx';
 import BarChart from './charts/BarChart.tsx';
@@ -19,9 +22,9 @@ import TreemapChart from './charts/TreemapChart.tsx';
 import Matrix from './charts/Matrix.tsx';
 import XIcon from './icons/XIcon.tsx';
 import DataTable from './DataTable.tsx';
-import { SalesData, DashboardWidget, KpiConfig, DataTableConfig, DynamicChartConfig, AggregationType, MatrixConfig, BubbleMapConfig, ChoroplethMapConfig, HeatmapConfig, DashboardConfig } from '../types.ts';
+import { SalesData, DashboardWidget, KpiConfig, DataTableConfig, DynamicChartConfig, AggregationType, MatrixConfig, BubbleMapConfig, ChoroplethMapConfig, HeatmapConfig, DashboardConfig, WidgetLayout } from '../types.ts';
 import { ALL_CATEGORIES } from '../constants.ts';
-import { getSalesData, getWaterfallData, getFunnelData, getAllMonths, getDashboardConfig } from '../services/dashboardData.ts';
+import { getSalesData, getWaterfallData, getFunnelData, getAllMonths, getDashboardConfig, saveDashboardConfig } from '../services/dashboardData.ts';
 import BubbleMap from './charts/BubbleMap.tsx';
 import ChoroplethMap from './charts/ChoroplethMap.tsx';
 import HeatmapChart from './charts/HeatmapChart.tsx';
@@ -29,6 +32,18 @@ import HeatmapChart from './charts/HeatmapChart.tsx';
 export type { SalesData };
 
 const componentMap = { KpiCard, LineChart, BarChart, PieChart, DataTable, ScatterChart, AreaChart, ComboChart, WaterfallChart, FunnelChart, TreemapChart, Matrix, BubbleMap, ChoroplethMap, HeatmapChart };
+const ReactGridLayout = WidthProvider(GridLayout);
+
+export const applyLayoutToWidgets = (config: DashboardConfig, layout: Layout[]): DashboardConfig => {
+    const map = layout.reduce<Record<string, WidgetLayout>>((acc, l) => {
+        acc[l.i] = { x: l.x, y: l.y, w: l.w, h: l.h };
+        return acc;
+    }, {});
+    return {
+        ...config,
+        widgets: config.widgets.map(w => ({ ...w, layout: map[w.id] || w.layout }))
+    };
+};
 
 const MultiSelectFilter = ({ options, selected, onChange, placeholder }: {
     options: string[], selected: string[], onChange: (selected: string[]) => void, placeholder: string
@@ -212,6 +227,8 @@ const Dashboard: React.FC = () => {
     const [allMonths, setAllMonths] = useState<string[]>([]);
     const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
+    const [layout, setLayout] = useState<Layout[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -232,6 +249,19 @@ const Dashboard: React.FC = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (dashboardConfig) {
+            const initialLayout = dashboardConfig.widgets.map((w, idx) => ({
+                i: w.id,
+                x: w.layout?.x ?? (idx % 12),
+                y: w.layout?.y ?? Math.floor(idx / 12),
+                w: w.layout?.w ?? 3,
+                h: w.layout?.h ?? 2,
+            }));
+            setLayout(initialLayout);
+        }
+    }, [dashboardConfig]);
+
     const allRegions = useMemo(() => [...new Set(rawSalesData.map(d => d.regiao))].sort(), [rawSalesData]);
 
     const filteredData = useMemo(() => rawSalesData.filter(item =>
@@ -244,6 +274,19 @@ const Dashboard: React.FC = () => {
         setSelectedMonths([]);
         setSelectedRegions([]);
         setSelectedCategories([]);
+    };
+
+    const handleLayoutChange = (newLayout: Layout[]) => {
+        if (isEditing) setLayout(newLayout);
+    };
+
+    const toggleEdit = async () => {
+        if (isEditing && dashboardConfig) {
+            const newConfig = applyLayoutToWidgets(dashboardConfig, layout);
+            await saveDashboardConfig(newConfig);
+            setDashboardConfig(newConfig);
+        }
+        setIsEditing(prev => !prev);
     };
 
     const widgetData = useMemo(() => {
@@ -384,13 +427,14 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
          <h1 className="text-3xl font-bold text-gray-800">Dashboard Interativo</h1>
-         <div className="flex flex-wrap items-center justify-end gap-3 bg-white p-3 rounded-lg shadow-sm border border-gray-200 w-full md:w-auto">
+          <div className="flex flex-wrap items-center justify-end gap-3 bg-white p-3 rounded-lg shadow-sm border border-gray-200 w-full md:w-auto">
             {dashboardConfig.filters.map(filterKey => {
                 const f = filterOptions[filterKey];
                 return <MultiSelectFilter key={filterKey} placeholder={`Filtrar por ${f.label}...`} options={f.options} selected={f.selected} onChange={f.setter} />
             })}
             {hasFilters && <button onClick={clearFilters} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors" title="Limpar Filtros"><XIcon title="Limpar Filtros" className="w-5 h-5"/></button>}
-        </div>
+            <button onClick={toggleEdit} className="p-2 text-white bg-[#00A3E0] hover:bg-[#0082B8] rounded-md">{isEditing ? 'Salvar Layout' : 'Editar Layout'}</button>
+          </div>
       </div>
       
       {noDataAfterFilter ? (
@@ -399,19 +443,26 @@ const Dashboard: React.FC = () => {
             <p className="mt-2">Tente ajustar ou limpar os filtros para visualizar os dados.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <ReactGridLayout
+            layout={layout}
+            cols={12}
+            rowHeight={30}
+            isDraggable={isEditing}
+            isResizable={isEditing}
+            onLayoutChange={handleLayoutChange}
+            margin={[16,16]}
+        >
             {dashboardConfig.widgets.map(widget => {
                 const Component = componentMap[widget.component];
                 const props = getWidgetProps(widget);
-                                
                 return (
-                    <div key={widget.id} className={widget.gridClass}>
+                    <div key={widget.id}>
                         <Component {...props} />
                     </div>
                 );
             })}
-        </div>
-       )}
+        </ReactGridLayout>
+      )}
     </div>
   );
 };

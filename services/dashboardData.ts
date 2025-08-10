@@ -40,5 +40,23 @@ export const getSalesData = async (): Promise<SalesData[]> => Promise.resolve(ra
 export const getWaterfallData = async () => Promise.resolve(waterfallSourceData);
 export const getFunnelData = async () => Promise.resolve(funnelSourceData);
 export const getAllMonths = async () => Promise.resolve(allMonths);
-export const getDashboardConfig = async (): Promise<DashboardConfig> => Promise.resolve(DASHBOARD_CONFIG);
+
+export const getDashboardConfig = async (): Promise<DashboardConfig> => {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('dashboardConfig') : null;
+    if (stored) {
+        try {
+            return JSON.parse(stored) as DashboardConfig;
+        } catch {
+            // ignore parsing errors and fall back to default
+        }
+    }
+    return Promise.resolve(DASHBOARD_CONFIG);
+};
+
+export const saveDashboardConfig = async (config: DashboardConfig): Promise<void> => {
+    if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('dashboardConfig', JSON.stringify(config));
+    }
+    return Promise.resolve();
+};
 
