@@ -1,0 +1,6 @@
+{
+  "name": "Gerenciador de Dados Financeiros",
+  "description": "Uma aplicação web para gerenciar e editar dados de tabelas financeiras de forma intuitiva, replicando a funcionalidade de planilhas.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
