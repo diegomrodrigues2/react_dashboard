@@ -9,6 +9,8 @@ interface ComboChartProps {
     data: any[];
     title: string;
     config: DynamicChartConfig;
+    xLabel?: string;
+    yLabel?: string;
 }
 
 const currencyFormatter = (val: any) => {
@@ -36,8 +38,11 @@ const CustomTooltip = ({ active, payload, label, barLabel, lineLabel }: any) => 
     return null;
 };
 
-const ComboChart: React.FC<ComboChartProps> = ({ data, title, config }) => {
+const ComboChart: React.FC<ComboChartProps> = ({ data, title, config, xLabel, yLabel }) => {
     const { category, value, lineValue } = config;
+
+    const xAxisLabel = xLabel ?? category.label;
+    const yAxisLabel = yLabel ?? value.label;
 
     if (!category?.dataKey || !value?.dataKey || !lineValue?.dataKey) {
         return <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex items-center justify-center text-red-500">Erro: Configuração de Categoria, Valor e Valor de Linha é obrigatória.</div>;
@@ -54,17 +59,17 @@ const ComboChart: React.FC<ComboChartProps> = ({ data, title, config }) => {
                     >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis dataKey={category.dataKey} stroke="#6B7280" tick={{ fontSize: 12 }}>
-                            <Label value={category.label} offset={-15} position="insideBottom" fill="#6B7280" fontSize={14} />
+                            <Label value={xAxisLabel} offset={-15} position="insideBottom" fill="#6B7280" fontSize={14} />
                         </XAxis>
                         <YAxis yAxisId="left" stroke="#00A3E0" tickFormatter={currencyFormatter} tick={{ fontSize: 12 }}>
-                            <Label value={value.label} angle={-90} offset={-15} position="insideLeft" style={{ textAnchor: 'middle' }} fill="#00A3E0" fontSize={14} />
+                            <Label value={yAxisLabel} angle={-90} offset={-15} position="insideLeft" style={{ textAnchor: 'middle' }} fill="#00A3E0" fontSize={14} />
                         </YAxis>
                         <YAxis yAxisId="right" orientation="right" stroke="#D9262E" tickFormatter={currencyFormatter} tick={{ fontSize: 12 }}>
                              <Label value={lineValue.label} angle={-90} offset={-15} position="insideRight" style={{ textAnchor: 'middle' }} fill="#D9262E" fontSize={14} />
                         </YAxis>
-                        <Tooltip content={<CustomTooltip barLabel={value.label} lineLabel={lineValue.label}/>} cursor={{ fill: 'rgba(229, 231, 235, 0.5)' }} />
+                        <Tooltip content={<CustomTooltip barLabel={yAxisLabel} lineLabel={lineValue.label}/>} cursor={{ fill: 'rgba(229, 231, 235, 0.5)' }} />
                         <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
-                        <Bar yAxisId="left" dataKey={value.dataKey} name={value.label} fill="#00A3E0" radius={[4, 4, 0, 0]} />
+                        <Bar yAxisId="left" dataKey={value.dataKey} name={yAxisLabel} fill="#00A3E0" radius={[4, 4, 0, 0]} />
                         <Line yAxisId="right" type="monotone" dataKey={lineValue.dataKey} name={lineValue.label} stroke="#D9262E" strokeWidth={2} activeDot={{ r: 8 }} />
                     </ComposedChart>
                 </ResponsiveContainer>
