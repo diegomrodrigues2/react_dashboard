@@ -7,6 +7,8 @@ interface FunnelChartProps {
     data: { name: string; value: number }[];
     title: string;
     config: DynamicChartConfig;
+    onStageClick?: (stageId: string) => void;
+    colors?: Record<string, string>;
 }
 
 const formatValue = (value: number) => value.toLocaleString('pt-BR');
@@ -38,17 +40,21 @@ const CustomTooltip = ({ active, payload, data }: { active?: boolean, payload?: 
     return null;
 };
 
-const FunnelChart: React.FC<FunnelChartProps> = ({ data, title, config }) => {
+const FunnelChart: React.FC<FunnelChartProps> = ({ data, title, config, onStageClick, colors }) => {
     const { category, value } = config;
 
-    const chartData = data.map(item => ({
+    const chartData = data.map(item => {
         // @ts-ignore
-        name: item[category?.dataKey],
+        const stageName = item[category?.dataKey];
         // @ts-ignore
-        value: item[value?.dataKey],
-        // @ts-ignore
-        fill: '#00A3E0' // Default color, can be customized
-    }));
+        const stageValue = item[value?.dataKey];
+
+        return {
+            name: stageName,
+            value: stageValue,
+            fill: colors?.[stageName] ?? '#00A3E0'
+        };
+    });
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col">
@@ -61,12 +67,14 @@ const FunnelChart: React.FC<FunnelChartProps> = ({ data, title, config }) => {
                             dataKey="value"
                             data={chartData}
                             isAnimationActive
+                            onClick={(_, index) => onStageClick?.(chartData[index].name)}
+                            cursor={onStageClick ? 'pointer' : undefined}
                         >
-                            <LabelList 
-                                position="center" 
-                                fill="#fff" 
-                                stroke="none" 
-                                dataKey="name" 
+                            <LabelList
+                                position="center"
+                                fill="#fff"
+                                stroke="none"
+                                dataKey="name"
                                 className="text-xs font-semibold"
                             />
                         </Funnel>
