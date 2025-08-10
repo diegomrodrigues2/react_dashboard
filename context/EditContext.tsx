@@ -3,8 +3,10 @@ import useEditable from '@/hooks/useEditable';
 
 interface EditContextValue {
   isEditing: boolean;
+  showTrendline: boolean;
   startEdit: () => void;
   stopEdit: () => void;
+  toggleTrendline: () => void;
 }
 
 const EditContext = createContext<EditContextValue | undefined>(undefined);
