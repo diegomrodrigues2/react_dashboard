@@ -179,7 +179,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ data, title, config }) => {
 
     return (
         <div
-            className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col"
+            className="bg-white p-6 rounded-lg shadow-lg h-full min-h-[28rem] flex flex-col"
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
         >

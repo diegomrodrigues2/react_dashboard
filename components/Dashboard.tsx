@@ -304,6 +304,24 @@ const Dashboard: React.FC = () => {
             }
         };
 
+        const minHeightForComponent = (component: ChartComponentType): number => {
+            switch (component) {
+                case 'KpiCard':
+                    return 3;
+                case 'DataTable':
+                    return 8;
+                case 'Matrix':
+                    return 7;
+                case 'ChoroplethMap':
+                case 'BubbleMap':
+                    return 6;
+                case 'LineChart':
+                    return 5;
+                default:
+                    return 5;
+            }
+        };
+
         // First-fit bin packing into a 12-col grid to avoid any overlaps.
         const COLS = 12;
 
@@ -349,6 +367,8 @@ const Dashboard: React.FC = () => {
             const defaults = defaultSizeForComponent(w.component);
             const itemW = Math.min(COLS, w.layout?.w ?? inferredSpan ?? defaults.w);
             const itemH = Math.max(1, w.layout?.h ?? defaults.h);
+            const itemMinH = minHeightForComponent(w.component);
+            const itemHRows = Math.max(itemH, itemMinH);
 
             // Try saved position first if it fits and is free
             const desiredX = w.layout?.x ?? undefined;
@@ -357,15 +377,15 @@ const Dashboard: React.FC = () => {
             if (
                 desiredX !== undefined && desiredY !== undefined &&
                 desiredX >= 0 && desiredX + itemW <= COLS && desiredY >= 0 &&
-                areaIsFree(desiredX, desiredY, itemW, itemH)
+                areaIsFree(desiredX, desiredY, itemW, itemHRows)
             ) {
                 placed = { x: desiredX, y: desiredY };
             } else {
-                placed = findSpot(itemW, itemH);
+                placed = findSpot(itemW, itemHRows);
             }
 
-            occupy(placed.x, placed.y, itemW, itemH);
-            packedLayout.push({ i: w.id, x: placed.x, y: placed.y, w: itemW, h: itemH });
+            occupy(placed.x, placed.y, itemW, itemHRows);
+            packedLayout.push({ i: w.id, x: placed.x, y: placed.y, w: itemW, h: itemHRows, minH: itemMinH });
         });
 
         setLayout(packedLayout);
@@ -588,6 +608,8 @@ const Dashboard: React.FC = () => {
             rowHeight={30}
             compactType="vertical"
             preventCollision={true}
+            allowOverlap={false}
+            isBounded={true}
             isDraggable={isEditing}
             isResizable={isEditing}
             isDroppable={isEditing}

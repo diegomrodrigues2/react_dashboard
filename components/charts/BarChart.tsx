@@ -149,7 +149,7 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, config, colorPalette, 
         };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col">
+        <div className="bg-white p-6 rounded-lg shadow-lg h-full flex flex-col">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
             <div className="flex-grow">
                 <ResponsiveContainer width="100%" height="100%">

@@ -107,7 +107,7 @@ const BubbleMap: React.FC<BubbleMapProps> = ({ data, title, config }) => {
     };
     
     return (
-        <div className="bg-white p-6 rounded-lg shadow-lg h-[32rem] flex flex-col relative" onMouseMove={handleMouseMove}>
+        <div className="bg-white p-6 rounded-lg shadow-lg h-full min-h-[28rem] flex flex-col relative" onMouseMove={handleMouseMove}>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
             {tooltip && (
                  <div

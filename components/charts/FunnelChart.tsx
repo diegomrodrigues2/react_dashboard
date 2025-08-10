@@ -80,7 +80,7 @@ const FunnelChart = <T extends Record<string, number | string>>({ data, title, c
     };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col">
+        <div className="bg-white p-6 rounded-lg shadow-lg h-full flex flex-col">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
             <div className="mb-4 space-y-2">
                 {stages.map((stage, index) => (

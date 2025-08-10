@@ -218,7 +218,7 @@ const ScatterChart: React.FC<ScatterChartProps> = ({ data, title, config, showTr
     };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-lg h-[32rem] flex flex-col">
+        <div className="bg-white p-6 rounded-lg shadow-lg h-full min-h-[28rem] flex flex-col">
             <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">{title}</h3>
             {isEditing ? (
                 <div className="flex justify-end gap-2 mb-2">

@@ -123,7 +123,7 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ data, title, config }) 
     const valueFormatter = valueConfig?.formatter ?? currencyFormatter;
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col">
+        <div className="bg-white p-6 rounded-lg shadow-lg h-full flex flex-col">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
             <ul className="mb-4">
                 {items.map((item, index) => (

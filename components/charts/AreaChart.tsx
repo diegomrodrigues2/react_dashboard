@@ -120,8 +120,8 @@ const AreaChart: React.FC<AreaChartProps> = ({ data, title, config, gradientColo
 
   const percentFormatter = (tick: number) => `${(tick * 100).toFixed(0)}%`;
 
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col">
+    return (
+    <div className="bg-white p-6 rounded-lg shadow-lg h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-800 text-center flex-1">{title}</h3>
         {customGradient && (
