@@ -39,6 +39,8 @@ export default function DataTable<T extends DataItem>({
   const [dropdownSearchTerm, setDropdownSearchTerm] = useState('');
   const [tempSelectedValues, setTempSelectedValues] = useState<Set<string>>(new Set());
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const handleGlobalSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -207,6 +209,30 @@ export default function DataTable<T extends DataItem>({
     return items;
   }, [data, searchTerm, columnFilters, sortConfig]);
 
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(processedData.length / rowsPerPage)),
+    [processedData, rowsPerPage]
+  );
+
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return processedData.slice(start, start + rowsPerPage);
+  }, [processedData, currentPage, rowsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
   const canPerformWriteActions = userRole === 'admin' || userRole === 'editor';
 
   const uniqueValuesForDropdown = useMemo(() => {
@@ -370,7 +396,7 @@ export default function DataTable<T extends DataItem>({
                 </td>
               </tr>
             ) : (
-              processedData.map((item, rowIndex) => (
+              paginatedData.map((item, rowIndex) => (
                 <tr key={item.id || rowIndex} className={`${getRowClass ? getRowClass(item) : ''} hover:bg-gray-50 transition-colors duration-150`}>
                   {columns.map((col) => (
                     <td key={`${String(col.accessor)}-${item.id || rowIndex}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -405,6 +431,28 @@ export default function DataTable<T extends DataItem>({
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <button
+            onClick={handlePreviousPage}
+            disabled={currentPage === 1}
+            className="flex items-center bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-gray-600">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+            className="flex items-center bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md disabled:opacity-50"
+          >
+            Próximo
+          </button>
+        </div>
+      )}
     </div>
   );
 }
