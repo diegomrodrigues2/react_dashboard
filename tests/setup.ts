@@ -41,15 +41,6 @@ const customRender = (ui: ReactElement, options?: RenderOptions) => render(ui, o
 export * from '@testing-library/react';
 export { customRender as render };
 
-// Polyfill ResizeObserver for recharts tests
-class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-// @ts-ignore
-global.ResizeObserver = ResizeObserver;
-
 Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
   configurable: true,
   value: 300
