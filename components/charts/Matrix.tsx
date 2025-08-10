@@ -148,7 +148,7 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
                     label,
                     level,
                     items: groupItems,
-                    subtotal: aggregate(groupItems, valueField, valueAgg),
+                    subtotal: aggregate(groupItems, valueField.dataKey as keyof SalesData, valueAgg),
                     children: buildTree(groupItems, hierarchy, sortAsc, level + 1, uniqueKey),
                 };
             }).sort((a, b) => (sortAsc ? a.label.localeCompare(b.label) : b.label.localeCompare(a.label)));
