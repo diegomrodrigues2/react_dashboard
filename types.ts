@@ -219,6 +219,13 @@ export interface ChoroplethMapConfig {
 
 export type WidgetConfig = KpiConfig | DynamicChartConfig | DataTableConfig | MatrixConfig | BubbleMapConfig | ChoroplethMapConfig | HeatmapConfig;
 
+export interface WidgetLayout {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+
 export interface DashboardWidget {
     id: string;
     component: ChartComponentType;
@@ -227,6 +234,7 @@ export interface DashboardWidget {
     config: WidgetConfig;
     isLoading?: boolean;
     error?: string;
+    layout?: WidgetLayout;
 }
 
 export interface DashboardConfig {
