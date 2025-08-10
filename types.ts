@@ -154,6 +154,7 @@ export interface ChartWell {
     dataKey: keyof SalesData | 'category' | 'value' | 'stage' | 'name' | 'size' | 'colorMetric';
     label?: string;
     aggregation?: AggregationType;
+    formatter?: (value: number) => string;
 }
 
 export interface DynamicChartConfig {
