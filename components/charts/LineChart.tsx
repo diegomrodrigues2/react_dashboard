@@ -1,18 +1,28 @@
 
 import React, { useMemo } from 'react';
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import type { LineProps } from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 
 interface LineChartProps {
   data: any[];
   title: string;
   config: DynamicChartConfig;
+  /**
+   * Propriedades adicionais para personalizar cada `<Line>`.
+   * Exemplos:
+   * ```tsx
+   * <LineChart lineProps={{ strokeWidth: 4, type: 'step', dot: false }} />
+   * <LineChart lineProps={{ dot: { r: 6 }, strokeDasharray: '5 5' }} />
+   * ```
+   */
+  lineProps?: Partial<LineProps>;
 }
 
 const lineColors = ['#00A3E0', '#D9262E', '#64B5F6', '#FFCA28'];
 
 
-const LineChart: React.FC<LineChartProps> = ({ data, title, config }) => {
+const LineChart: React.FC<LineChartProps> = ({ data, title, config, lineProps }) => {
   const { category, value, legend } = config;
 
   const lineDataKeys = useMemo(() => {
@@ -65,6 +75,7 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, config }) => {
                     strokeWidth={2}
                     activeDot={{ r: 8, strokeWidth: 2, stroke: '#fff' }}
                     dot={{r: 4, strokeWidth: 2}}
+                    {...lineProps}
                 />
             ))}
             </RechartsLineChart>
