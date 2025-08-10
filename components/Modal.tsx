@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { FieldConfig, DataItem } from '../types.ts';
 import XIcon from './icons/XIcon.tsx';
 
@@ -29,6 +30,7 @@ const Modal: React.FC<ModalProps> = ({
   cancelButtonText = "Cancelar",
 }) => {
   const [formData, setFormData] = useState<Partial<DataItem>>({});
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -55,6 +57,15 @@ const Modal: React.FC<ModalProps> = ({
       }
     }
   }, [isOpen, initialData, fields]);
+
+  useEffect(() => {
+    if (isOpen && modalRef.current) {
+      const firstFocusable = modalRef.current.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus();
+    }
+  }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -126,7 +137,8 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <FocusTrap active={isOpen}>
+        <div ref={modalRef} className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 id="modal-title" className="text-2xl font-semibold text-gray-800">{title}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Fechar modal">
@@ -184,6 +196,7 @@ const Modal: React.FC<ModalProps> = ({
          </div>
         )}
       </div>
+      </FocusTrap>
     </div>
   );
 };
