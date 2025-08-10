@@ -265,21 +265,31 @@ const Dashboard: React.FC = () => {
         // Infer default size from gridClass or component when layout is missing
         const spanFromGridClass = (gridClass?: string): number | undefined => {
             if (!gridClass) return undefined;
-            const match = gridClass.match(/(?:lg:)?col-span-(\d+)/);
-            return match ? Math.max(1, Math.min(12, Number(match[1]))) : undefined;
+            // Prefer larger spans; look for any breakpoint and take the max (lg wins)
+            const spans: number[] = [];
+            const regex = /(?:^|\s)(?:[a-z]+:)?col-span-(\d+)/g;
+            let m: RegExpExecArray | null;
+            while ((m = regex.exec(gridClass)) !== null) {
+                const v = Number(m[1]);
+                if (!Number.isNaN(v)) spans.push(v);
+            }
+            if (spans.length === 0) return undefined;
+            return Math.max(1, Math.min(12, Math.max(...spans)));
         };
 
         const defaultSizeForComponent = (component: ChartComponentType): { w: number; h: number } => {
             switch (component) {
                 case 'KpiCard':
-                    return { w: 3, h: 2 };
+                    return { w: 3, h: 3 };
                 case 'DataTable':
+                    return { w: 12, h: 10 };
                 case 'Matrix':
+                    return { w: 12, h: 8 };
                 case 'ChoroplethMap':
                 case 'BubbleMap':
-                    return { w: 12, h: 6 };
+                    return { w: 12, h: 7 };
                 case 'LineChart':
-                    return { w: 12, h: 4 };
+                    return { w: 12, h: 6 };
                 case 'ComboChart':
                 case 'WaterfallChart':
                 case 'FunnelChart':
@@ -290,7 +300,7 @@ const Dashboard: React.FC = () => {
                 case 'ScatterChart':
                 case 'HeatmapChart':
                 default:
-                    return { w: 6, h: 4 };
+                    return { w: 6, h: 6 };
             }
         };
 
@@ -554,7 +564,7 @@ const Dashboard: React.FC = () => {
             isResizable={isEditing}
             isDroppable={isEditing}
             onDrop={handleDrop}
-            droppingItem={{ i: '__dropping', w: 2, h: 2 }}
+            droppingItem={{ i: '__dropping', w: 6, h: 6 }}
             onLayoutChange={handleLayoutChange}
             margin={[16,16]}
             className={isEditing ? 'dashboard-editing bg-gray-50 border-2 border-dashed' : ''}
