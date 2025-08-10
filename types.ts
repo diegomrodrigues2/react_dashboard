@@ -225,6 +225,8 @@ export interface DashboardWidget {
     gridClass: string;
     title?: string;
     config: WidgetConfig;
+    isLoading?: boolean;
+    error?: string;
 }
 
 export interface DashboardConfig {

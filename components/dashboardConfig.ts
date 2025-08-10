@@ -25,6 +25,7 @@ export const DASHBOARD_CONFIG: DashboardConfig = {
             component: 'KpiCard',
             gridClass: 'col-span-1 md:col-span-2 lg:col-span-3',
             title: 'Vendas Totais',
+            isLoading: false,
             config: {
                 valueKey: 'totalVendas',
                 description: 'para a seleção atual',
@@ -36,6 +37,7 @@ export const DASHBOARD_CONFIG: DashboardConfig = {
             component: 'KpiCard',
             gridClass: 'col-span-1 md:col-span-2 lg:col-span-3',
             title: 'Lucro Total',
+            isLoading: false,
             config: {
                 valueKey: 'totalLucro',
                 description: 'para a seleção atual',
@@ -47,6 +49,7 @@ export const DASHBOARD_CONFIG: DashboardConfig = {
             component: 'KpiCard',
             gridClass: 'col-span-1 md:col-span-2 lg:col-span-3',
             title: 'Total de Clientes',
+            isLoading: false,
             config: {
                 valueKey: 'totalClientes',
                 description: 'na seleção atual',
@@ -58,6 +61,7 @@ export const DASHBOARD_CONFIG: DashboardConfig = {
             component: 'KpiCard',
             gridClass: 'col-span-1 md:col-span-2 lg:col-span-3',
             title: 'Ticket Médio',
+            isLoading: false,
             config: {
                 valueKey: 'ticketMedio',
                 description: 'por cliente na seleção',

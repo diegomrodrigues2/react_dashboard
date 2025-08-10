@@ -290,7 +290,14 @@ const Dashboard: React.FC = () => {
         switch(component) {
             case 'KpiCard': {
                 const kpiConfig = config as KpiConfig;
-                return { title, value: kpiConfig.formatter(widgetData.kpiData[kpiConfig.valueKey]), description: kpiConfig.description };
+                const kpiData = widgetData.kpiData;
+                return {
+                    title,
+                    value: kpiData ? kpiConfig.formatter(kpiData[kpiConfig.valueKey]) : '',
+                    description: kpiConfig.description,
+                    isLoading: widget.isLoading,
+                    error: widget.error,
+                };
             }
             case 'LineChart':
             case 'BarChart':
