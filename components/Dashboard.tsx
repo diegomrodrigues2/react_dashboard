@@ -304,40 +304,68 @@ const Dashboard: React.FC = () => {
             }
         };
 
-        // Flow layout packer to avoid overlaps. Packs left-to-right, top-to-bottom.
+        // First-fit bin packing into a 12-col grid to avoid any overlaps.
         const COLS = 12;
-        let cursorX = 0;
-        let cursorY = 0;
-        let currentRowHeight = 0; // in grid rows
 
-        const packedLayout = dashboardConfig.widgets.map((w) => {
+        type Cell = 0 | 1;
+        const rows: Cell[][] = [];
+
+        const ensureRows = (needed: number) => {
+            while (rows.length < needed) rows.push(Array.from({ length: COLS }, () => 0));
+        };
+
+        const areaIsFree = (x: number, y: number, w: number, h: number): boolean => {
+            ensureRows(y + h);
+            for (let dy = 0; dy < h; dy++) {
+                for (let dx = 0; dx < w; dx++) {
+                    if (rows[y + dy][x + dx] === 1) return false;
+                }
+            }
+            return true;
+        };
+
+        const occupy = (x: number, y: number, w: number, h: number) => {
+            ensureRows(y + h);
+            for (let dy = 0; dy < h; dy++) {
+                for (let dx = 0; dx < w; dx++) rows[y + dy][x + dx] = 1;
+            }
+        };
+
+        const findSpot = (w: number, h: number): { x: number; y: number } => {
+            let y = 0;
+            while (true) {
+                ensureRows(y + h);
+                for (let x = 0; x <= COLS - w; x++) {
+                    if (areaIsFree(x, y, w, h)) return { x, y };
+                }
+                y += 1;
+            }
+        };
+
+        const packedLayout: Layout[] = [];
+
+        dashboardConfig.widgets.forEach((w) => {
             const inferredSpan = spanFromGridClass(w.gridClass);
             const defaults = defaultSizeForComponent(w.component);
+            const itemW = Math.min(COLS, w.layout?.w ?? inferredSpan ?? defaults.w);
+            const itemH = Math.max(1, w.layout?.h ?? defaults.h);
 
-            const itemW = w.layout?.w ?? inferredSpan ?? defaults.w;
-            const itemH = w.layout?.h ?? defaults.h;
-
-            // If item does not fit current row, wrap to next row
-            if (cursorX + itemW > COLS) {
-                cursorX = 0;
-                cursorY += currentRowHeight;
-                currentRowHeight = 0;
+            // Try saved position first if it fits and is free
+            const desiredX = w.layout?.x ?? undefined;
+            const desiredY = w.layout?.y ?? undefined;
+            let placed: { x: number; y: number };
+            if (
+                desiredX !== undefined && desiredY !== undefined &&
+                desiredX >= 0 && desiredX + itemW <= COLS && desiredY >= 0 &&
+                areaIsFree(desiredX, desiredY, itemW, itemH)
+            ) {
+                placed = { x: desiredX, y: desiredY };
+            } else {
+                placed = findSpot(itemW, itemH);
             }
 
-            const x = w.layout?.x ?? cursorX;
-            const y = w.layout?.y ?? cursorY;
-
-            // Advance cursor
-            cursorX = (w.layout?.x !== undefined ? w.layout.x + itemW : cursorX + itemW) % (COLS + 1);
-            if (cursorX > COLS) {
-                // Safety wrap (should not happen with logic above)
-                cursorX = 0;
-                cursorY += currentRowHeight;
-                currentRowHeight = 0;
-            }
-            currentRowHeight = Math.max(currentRowHeight, itemH);
-
-            return { i: w.id, x, y, w: itemW, h: itemH } as Layout;
+            occupy(placed.x, placed.y, itemW, itemH);
+            packedLayout.push({ i: w.id, x: placed.x, y: placed.y, w: itemW, h: itemH });
         });
 
         setLayout(packedLayout);
@@ -559,7 +587,7 @@ const Dashboard: React.FC = () => {
             cols={12}
             rowHeight={30}
             compactType="vertical"
-            preventCollision={false}
+            preventCollision={true}
             isDraggable={isEditing}
             isResizable={isEditing}
             isDroppable={isEditing}
