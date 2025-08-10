@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import MenuIcon from './icons/MenuIcon.tsx';
 import UserCircleIcon from './icons/UserCircleIcon.tsx';
 import IdentificationIcon from './icons/IdentificationIcon.tsx';
@@ -23,6 +23,8 @@ const TopBar: React.FC<TopBarProps> = ({
   onToggleUserDropdown,
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -38,6 +40,30 @@ const TopBar: React.FC<TopBarProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isUserDropdownOpen, onToggleUserDropdown]);
+
+  useEffect(() => {
+    if (isUserDropdownOpen) {
+      setActiveIndex(0);
+      menuItemRefs.current[0]?.focus();
+    }
+  }, [isUserDropdownOpen]);
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      onToggleUserDropdown();
+    }
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const nextIndex =
+        event.key === 'ArrowDown'
+          ? (activeIndex + 1) % menuItemRefs.current.length
+          : (activeIndex - 1 + menuItemRefs.current.length) %
+            menuItemRefs.current.length;
+      setActiveIndex(nextIndex);
+      menuItemRefs.current[nextIndex]?.focus();
+    }
+  };
 
   return (
     <div className="fixed top-0 left-0 right-0 h-16 bg-[#002D5A] text-white flex items-center justify-between px-4 shadow-md z-40">
@@ -70,16 +96,21 @@ const TopBar: React.FC<TopBarProps> = ({
           </button>
 
           {isUserDropdownOpen && (
-            <div 
+            <div
               id="user-menu"
-              className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50" 
-              role="menu" 
-              aria-orientation="vertical" 
+              className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+              role="menu"
+              aria-orientation="vertical"
               aria-labelledby="user-menu-button"
+              aria-activedescendant={`user-menu-item-${activeIndex}`}
+              onKeyDown={handleKeyDown}
             >
               <div className="py-1" role="none">
                 <button
-                  onClick={() => { onProfileClick(); }}
+                  ref={(el) => (menuItemRefs.current[0] = el)}
+                  onClick={() => {
+                    onProfileClick();
+                  }}
                   className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none"
                   role="menuitem"
                   id="user-menu-item-0"
@@ -88,7 +119,10 @@ const TopBar: React.FC<TopBarProps> = ({
                   Perfil
                 </button>
                 <button
-                  onClick={() => { onLogoutClick(); }}
+                  ref={(el) => (menuItemRefs.current[1] = el)}
+                  onClick={() => {
+                    onLogoutClick();
+                  }}
                   className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none"
                   role="menuitem"
                   id="user-menu-item-1"
