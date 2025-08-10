@@ -9,6 +9,7 @@ import LoginPage from './components/LoginPage.tsx'; // Import LoginPage
 import Dashboard from './components/Dashboard.tsx'; // Import Dashboard
 import { AppData, DataItem, MenuItem as MenuItemType, FieldConfig, UserData, ActivityLog, UserRole } from './types.ts';
 import { MENU_ITEMS, INITIAL_APP_DATA, generateId, MOCK_RECENT_ACTIVITIES } from './constants.ts';
+import { EditProvider } from './context/EditContext.tsx';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false); // Authentication state
@@ -212,6 +213,7 @@ const App: React.FC = () => {
   }
 
   return (
+    <EditProvider>
     <div className="flex flex-col h-screen overflow-hidden">
       <TopBar
         userName={currentUser.name} // Use currentUser.name
@@ -292,6 +294,7 @@ const App: React.FC = () => {
           />
       )}
     </div>
+    </EditProvider>
   );
 };
 
