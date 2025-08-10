@@ -59,8 +59,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ data, title, config }) => {
         const allY = Array.from(new Set(data.map(d => String(d[yKey] ?? '')))).sort();
 
         const gridData = new Map<string, number>();
-        let minVal = Infinity;
-        let maxVal = -Infinity;
+        const values: number[] = [];
 
         allY.forEach(yVal => {
             allX.forEach(xVal => {
@@ -69,21 +68,19 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ data, title, config }) => {
                 const gridKey = `${yVal}|${xVal}`;
                 gridData.set(gridKey, aggregatedValue);
 
-                if(filteredItems.length > 0) {
-                    if (aggregatedValue < minVal) minVal = aggregatedValue;
-                    if (aggregatedValue > maxVal) maxVal = aggregatedValue;
+                if (filteredItems.length > 0) {
+                    values.push(aggregatedValue);
                 }
             });
         });
 
-        // handle case where all values are the same or only one value exists
-        if (minVal === Infinity) minVal = 0;
-        if (maxVal === -Infinity) maxVal = 0;
-        if (minVal === maxVal) {
-             minVal = minVal >= 0 ? 0 : minVal -1;
-             maxVal = maxVal > 0 ? maxVal + 1 : 0;
-        }
+        let minVal = values.length ? Math.min(...values) : 0;
+        let maxVal = values.length ? Math.max(...values) : 0;
 
+        if (minVal === maxVal) {
+            minVal = minVal >= 0 ? 0 : minVal - 1;
+            maxVal = maxVal > 0 ? maxVal + 1 : 0;
+        }
 
         return { gridData, xLabels: allX, yLabels: allY, valueRange: [minVal, maxVal] };
     }, [data, xConfig, yConfig, valConfig]);
@@ -104,6 +101,13 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ data, title, config }) => {
         const b = Math.round(startColor.b + ratio * (endColor.b - startColor.b));
         return `rgb(${r}, ${g}, ${b})`;
     };
+
+    const legendStyle = useMemo(
+        () => ({
+            background: `linear-gradient(to right, ${getColor(valueRange[0])}, ${getColor(valueRange[1])})`
+        }),
+        [valueRange]
+    );
 
     const handleMouseEnter = (xVal: string, yVal: string, e: React.MouseEvent) => {
         const value = gridData.get(`${yVal}|${xVal}`);
@@ -170,7 +174,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ data, title, config }) => {
             </div>
             <div className="flex items-center justify-center gap-2 pt-4">
                 <span className="text-xs text-gray-600">{formatValue(valueRange[0], valConfig.label || '')}</span>
-                <div className="w-48 h-3 rounded-full" style={{ background: `linear-gradient(to right, ${getColor(valueRange[0])}, ${getColor(valueRange[1])})` }}></div>
+                <div className="w-48 h-3 rounded-full" style={legendStyle}></div>
                 <span className="text-xs text-gray-600">{formatValue(valueRange[1], valConfig.label || '')}</span>
             </div>
         </div>
