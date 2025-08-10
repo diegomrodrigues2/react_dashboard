@@ -18,6 +18,9 @@ interface DataTableProps<T extends DataItem> {
   title: string;
   userRole: UserRole;
   getRowClass?: (item: T) => string;
+  enableDragAndDrop?: boolean;
+  persistKey?: string;
+  onReorder?: (data: T[]) => void;
 }
 
 export default function DataTable<T extends DataItem>({ 
@@ -28,7 +31,10 @@ export default function DataTable<T extends DataItem>({
   onDeleteItem, 
   title,
   userRole,
-  getRowClass
+  getRowClass,
+  enableDragAndDrop = false,
+  persistKey,
+  onReorder
 }: DataTableProps<T>): React.ReactNode {
   const [searchTerm, setSearchTerm] = useState('');
   // Store selected unique values for each column: { accessor: ['value1', 'value2'] }
@@ -41,6 +47,27 @@ export default function DataTable<T extends DataItem>({
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [tableData, setTableData] = useState<T[]>([]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (enableDragAndDrop && persistKey) {
+      const saved = localStorage.getItem(persistKey);
+      if (saved) {
+        try {
+          const ids: string[] = JSON.parse(saved);
+          const map = new Map(data.map(item => [item.id, item]));
+          const ordered = ids.map(id => map.get(id)).filter(Boolean) as T[];
+          const remaining = data.filter(item => !ids.includes(item.id)) as T[];
+          setTableData([...ordered, ...remaining]);
+          return;
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+    setTableData(data);
+  }, [data, enableDragAndDrop, persistKey]);
 
   const handleGlobalSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -64,16 +91,16 @@ export default function DataTable<T extends DataItem>({
   };
   
   const getUniqueColumnValues = useCallback((accessor: keyof T): string[] => {
-    if (!data || data.length === 0) return [];
+    if (!tableData || tableData.length === 0) return [];
     const uniqueValues = new Set<string>();
-    data.forEach(item => {
+    tableData.forEach(item => {
       const value = item[accessor];
       if (value !== null && value !== undefined && String(value).trim() !== '') {
         uniqueValues.add(String(value));
       }
     });
     return Array.from(uniqueValues).sort((a, b) => a.localeCompare(b));
-  }, [data]);
+  }, [tableData]);
 
   const openFilterDropdown = (accessor: keyof T) => {
     setActiveFilterDropdown(accessor);
@@ -133,6 +160,28 @@ export default function DataTable<T extends DataItem>({
     });
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (index: number, e: React.DragEvent<HTMLTableRowElement>) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    const updated = [...tableData];
+    const [moved] = updated.splice(draggedIndex, 1);
+    updated.splice(index, 0, moved);
+    setDraggedIndex(index);
+    setTableData(updated);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    if (enableDragAndDrop && persistKey) {
+      localStorage.setItem(persistKey, JSON.stringify(tableData.map(d => d.id)));
+    }
+    onReorder?.(tableData);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
@@ -157,7 +206,7 @@ export default function DataTable<T extends DataItem>({
 
 
   const processedData = useMemo(() => {
-    let items = [...data];
+    let items = [...tableData];
 
     // 1. Global Search Filter
     if (searchTerm.trim()) {
@@ -207,17 +256,19 @@ export default function DataTable<T extends DataItem>({
       });
     }
     return items;
-  }, [data, searchTerm, columnFilters, sortConfig]);
+  }, [tableData, searchTerm, columnFilters, sortConfig]);
 
   const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(processedData.length / rowsPerPage)),
-    [processedData, rowsPerPage]
+    () => enableDragAndDrop ? 1 : Math.max(1, Math.ceil(processedData.length / rowsPerPage)),
+    [processedData, rowsPerPage, enableDragAndDrop]
   );
 
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
     return processedData.slice(start, start + rowsPerPage);
   }, [processedData, currentPage, rowsPerPage]);
+
+  const rowsToRender = enableDragAndDrop ? processedData : paginatedData;
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -396,43 +447,52 @@ export default function DataTable<T extends DataItem>({
                 </td>
               </tr>
             ) : (
-              paginatedData.map((item, rowIndex) => (
-                <tr key={item.id || rowIndex} className={`${getRowClass ? getRowClass(item) : ''} hover:bg-gray-50 transition-colors duration-150`}>
-                  {columns.map((col) => (
-                    <td key={`${String(col.accessor)}-${item.id || rowIndex}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {col.render ? col.render(item[col.accessor], item) : String(item[col.accessor] ?? '')}
-                    </td>
-                  ))}
-                  {userRole !== 'viewer' && (
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      {(userRole === 'admin' || userRole === 'editor') && (
-                        <button
-                          onClick={() => onEditItem(item)}
-                          className="text-[#00A3E0] hover:text-[#0082B8] transition-colors duration-150 p-1 rounded hover:bg-[#E0F7FF]"
-                          title="Editar"
-                        >
-                          <PencilIcon title="Editar" className="w-5 h-5" />
-                        </button>
-                      )}
-                      {userRole === 'admin' && (
-                        <button
-                          onClick={() => onDeleteItem(item.id)}
-                          className="text-[#D9262E] hover:text-[#B01F25] transition-colors duration-150 p-1 rounded hover:bg-[#FEEBEE]"
-                          title="Excluir"
-                        >
-                          <TrashIcon title="Excluir" className="w-5 h-5" />
-                        </button>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              ))
+              rowsToRender.map((item, rowIndex) => {
+                const index = tableData.findIndex(d => d.id === item.id);
+                return (
+                  <tr
+                    key={item.id || rowIndex}
+                    className={`${getRowClass ? getRowClass(item) : ''} hover:bg-gray-50 transition-colors duration-150 ${enableDragAndDrop ? 'cursor-move' : ''}`}
+                    draggable={enableDragAndDrop}
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(index, e)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    {columns.map((col) => (
+                      <td key={`${String(col.accessor)}-${item.id || rowIndex}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {col.render ? col.render(item[col.accessor], item) : String(item[col.accessor] ?? '')}
+                      </td>
+                    ))}
+                    {userRole !== 'viewer' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        {(userRole === 'admin' || userRole === 'editor') && (
+                          <button
+                            onClick={() => onEditItem(item)}
+                            className="text-[#00A3E0] hover:text-[#0082B8] transition-colors duration-150 p-1 rounded hover:bg-[#E0F7FF]"
+                            title="Editar"
+                          >
+                            <PencilIcon title="Editar" className="w-5 h-5" />
+                          </button>
+                        )}
+                        {userRole === 'admin' && (
+                          <button
+                            onClick={() => onDeleteItem(item.id)}
+                            className="text-[#D9262E] hover:text-[#B01F25] transition-colors duration-150 p-1 rounded hover:bg-[#FEEBEE]"
+                            title="Excluir"
+                          >
+                            <TrashIcon title="Excluir" className="w-5 h-5" />
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
-
-      {totalPages > 1 && (
+      {!enableDragAndDrop && totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <button
             onClick={handlePreviousPage}
