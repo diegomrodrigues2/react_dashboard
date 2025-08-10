@@ -97,6 +97,7 @@ export interface MenuItem<T extends DataItem> {
   fields?: FieldConfig<T>[];
   dataKey?: keyof AppData;
   getRowClass?: (item: T) => string;
+  hidden?: boolean;
 }
 
 export interface AppData {
