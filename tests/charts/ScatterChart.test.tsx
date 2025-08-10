@@ -1,12 +1,6 @@
 import React from 'react';
-import { describe, test, expect, vi, afterEach } from 'vitest';
-
-class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-(global as any).ResizeObserver = ResizeObserver;
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, fireEvent, screen, cleanup, setChartDimensions } from '../setup.ts';
 
 vi.mock('recharts', async () => {
   const mod: any = await vi.importActual('recharts');
@@ -20,9 +14,10 @@ vi.mock('recharts', async () => {
   };
 });
 
-import { render, fireEvent, screen, cleanup } from '../setup';
 import ScatterChart from '../../components/charts/ScatterChart';
 import { DynamicChartConfig } from '../../types';
+
+beforeEach(() => setChartDimensions(500, 400));
 
 describe('ScatterChart interactions', () => {
   const config: DynamicChartConfig = {
@@ -67,4 +62,6 @@ describe('ScatterChart interactions', () => {
 
 afterEach(() => {
   cleanup();
+  setChartDimensions(800, 600);
 });
+

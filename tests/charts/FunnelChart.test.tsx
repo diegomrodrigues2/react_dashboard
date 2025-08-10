@@ -1,17 +1,11 @@
-import { render, screen, fireEvent } from '../setup.ts';
+import { render, screen, fireEvent, setChartDimensions } from '../setup.ts';
 import userEvent from '@testing-library/user-event';
-import { test, expect } from 'vitest';
+import { test, expect, beforeEach, afterEach } from 'vitest';
 import FunnelChart from '../../components/charts/FunnelChart.tsx';
 import { DynamicChartConfig } from '../../types.ts';
 
-class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-
-// @ts-ignore
-global.ResizeObserver = ResizeObserver;
+beforeEach(() => setChartDimensions(800, 600));
+afterEach(() => setChartDimensions(800, 600));
 
 const config: DynamicChartConfig = {
   sourceDataKey: 'funnelData',

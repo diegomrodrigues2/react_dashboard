@@ -1,51 +1,12 @@
-import { render, screen, fireEvent } from '../setup.ts';
+import { render, screen, fireEvent, setChartDimensions } from '../setup.ts';
 import BarChart from '../../components/charts/BarChart.tsx';
 import { DynamicChartConfig } from '../../types.ts';
-import { test, expect } from 'vitest';
+import { test, expect, beforeEach, afterEach } from 'vitest';
 
 declare const document: Document;
 
-// Polyfill ResizeObserver for Recharts' ResponsiveContainer
-class ResizeObserver {
-  callback: ResizeObserverCallback;
-  constructor(cb: ResizeObserverCallback) {
-    this.callback = cb;
-  }
-  observe(target: Element) {
-    this.callback([
-      {
-        contentRect: {
-          width: parseInt((target as HTMLElement).style.width || '400', 10),
-          height: parseInt((target as HTMLElement).style.height || '400', 10),
-          top: 0,
-          left: 0,
-          bottom: 0,
-          right: 0,
-        } as DOMRectReadOnly,
-        target,
-      } as ResizeObserverEntry,
-    ], this);
-  }
-  unobserve() {}
-  disconnect() {}
-}
-// @ts-ignore
-global.ResizeObserver = ResizeObserver;
-
-// Provide dimensions for elements used by Recharts
-Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
-  configurable: true,
-  value: function () {
-    return {
-      width: parseInt(this.style.width || '400', 10),
-      height: parseInt(this.style.height || '400', 10),
-      top: 0,
-      left: 0,
-      bottom: 0,
-      right: 0,
-    } as DOMRect;
-  },
-});
+beforeEach(() => setChartDimensions(400, 400));
+afterEach(() => setChartDimensions(800, 600));
 
 const data = [
   { category: 'A', s1: 10, s2: 20 },

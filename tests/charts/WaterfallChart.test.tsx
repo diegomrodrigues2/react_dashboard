@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event';
-import { render, screen, fireEvent } from '../setup.ts';
-import { test, expect, beforeAll, afterEach } from 'vitest';
+import { render, screen, fireEvent, setChartDimensions } from '../setup.ts';
+import { test, expect, beforeEach, afterEach } from 'vitest';
 import WaterfallChart from '../../components/charts/WaterfallChart.tsx';
 import { DynamicChartConfig } from '../../types.ts';
 import { cleanup } from '../setup.ts';
@@ -19,18 +19,11 @@ const config: DynamicChartConfig = {
   value: { dataKey: 'value', label: 'Valor' }
 };
 
-beforeAll(() => {
-  // jsdom doesn't implement ResizeObserver which is required by Recharts' ResponsiveContainer
-  // @ts-ignore
-  global.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  };
-});
+beforeEach(() => setChartDimensions(800, 600));
 
 afterEach(() => {
   cleanup();
+  setChartDimensions(800, 600);
 });
 
 test('reorders bars when dragged', () => {
@@ -56,3 +49,4 @@ test('label edits persist after reorder', async () => {
   const inputs = screen.getAllByLabelText(/label-input-/);
   expect(inputs[2]).toHaveValue('Alpha');
 });
+

@@ -2,71 +2,61 @@ import { render, RenderOptions } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import '@testing-library/jest-dom/vitest';
 
+let width = 800;
+let height = 600;
+
+function setChartDimensions(w: number, h: number) {
+  width = w;
+  height = h;
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+    configurable: true,
+    value: w,
+  });
+  Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+    configurable: true,
+    value: h,
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+    configurable: true,
+    value: w,
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    value: h,
+  });
+  Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
+    configurable: true,
+    value: () => ({ width: w, height: h, top: 0, left: 0, bottom: h, right: w }) as DOMRect,
+  });
+}
+
 class ResizeObserver {
-  observe() {}
+  private callback: ResizeObserverCallback;
+  constructor(cb: ResizeObserverCallback) {
+    this.callback = cb;
+  }
+  observe(target: Element) {
+    this.callback(
+      [
+        {
+          contentRect: new DOMRect(0, 0, width, height) as DOMRectReadOnly,
+          target,
+        } as ResizeObserverEntry,
+      ],
+      this,
+    );
+  }
   unobserve() {}
   disconnect() {}
 }
 
 // @ts-ignore
-global.ResizeObserver = ResizeObserver;
+(global as any).ResizeObserver = ResizeObserver;
 
-Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
-  configurable: true,
-  value: 800,
-});
-
-Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
-  configurable: true,
-  value: 600,
-});
-
-Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
-  configurable: true,
-  value: 800,
-});
-
-Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
-  configurable: true,
-  value: 600,
-});
-
-// @ts-ignore
-HTMLElement.prototype.getBoundingClientRect = function () {
-  return { width: 800, height: 600, top: 0, left: 0, bottom: 600, right: 800 } as DOMRect;
-};
+setChartDimensions(width, height);
 
 const customRender = (ui: ReactElement, options?: RenderOptions) => render(ui, options);
 
 export * from '@testing-library/react';
-export { customRender as render };
+export { customRender as render, setChartDimensions };
 
-// Polyfill ResizeObserver for recharts tests
-class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-// @ts-ignore
-global.ResizeObserver = ResizeObserver;
-
-Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
-  configurable: true,
-  value: 300
-});
-Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
-  configurable: true,
-  value: 500
-});
-Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
-  configurable: true,
-  value: 300
-});
-Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
-  configurable: true,
-  value: 500
-});
-Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
-  configurable: true,
-  value: () => ({ width: 500, height: 300, top: 0, left: 0, bottom: 300, right: 500 })
-});
