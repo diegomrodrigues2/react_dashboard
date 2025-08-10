@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
     ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label
 } from 'recharts';
@@ -11,6 +11,7 @@ interface ComboChartProps {
     config: DynamicChartConfig;
     xLabel?: string;
     yLabel?: string;
+    lineLabel?: string;
 }
 
 const currencyFormatter = (val: any) => {
@@ -38,11 +39,53 @@ const CustomTooltip = ({ active, payload, label, barLabel, lineLabel }: any) => 
     return null;
 };
 
-const ComboChart: React.FC<ComboChartProps> = ({ data, title, config, xLabel, yLabel }) => {
+const ComboChart: React.FC<ComboChartProps> = ({ data, title, config, xLabel, yLabel, lineLabel }) => {
     const { category, value, lineValue } = config;
 
     const xAxisLabel = xLabel ?? category.label;
     const yAxisLabel = yLabel ?? value.label;
+    const lineAxisLabel = lineLabel ?? lineValue.label;
+
+    const [seriesOrder, setSeriesOrder] = useState<string[]>(['bar', 'line']);
+    const dragItem = useRef<string | null>(null);
+
+    const handleDragStart = (type: string) => {
+        dragItem.current = type;
+    };
+
+    const handleDrop = (target: string) => {
+        const from = dragItem.current;
+        if (!from || from === target) return;
+        setSeriesOrder(prev => {
+            const order = [...prev];
+            const fromIdx = order.indexOf(from);
+            const toIdx = order.indexOf(target);
+            order.splice(fromIdx, 1);
+            order.splice(toIdx, 0, from);
+            return order;
+        });
+    };
+
+    const renderLegend = () => (
+        <ul className="flex justify-center gap-4 pt-2 text-xs" data-testid="legend">
+            {seriesOrder.map(type => {
+                const label = type === 'bar' ? yAxisLabel : lineAxisLabel;
+                const color = type === 'bar' ? '#00A3E0' : '#D9262E';
+                return (
+                    <li
+                        key={type}
+                        draggable
+                        onDragStart={() => handleDragStart(type)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={() => handleDrop(type)}
+                        className="cursor-move select-none"
+                    >
+                        <span style={{ color }}>{label}</span>
+                    </li>
+                );
+            })}
+        </ul>
+    );
 
     if (!category?.dataKey || !value?.dataKey || !lineValue?.dataKey) {
         return <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex items-center justify-center text-red-500">Erro: Configuração de Categoria, Valor e Valor de Linha é obrigatória.</div>;
@@ -65,12 +108,17 @@ const ComboChart: React.FC<ComboChartProps> = ({ data, title, config, xLabel, yL
                             <Label value={yAxisLabel} angle={-90} offset={-15} position="insideLeft" style={{ textAnchor: 'middle' }} fill="#00A3E0" fontSize={14} />
                         </YAxis>
                         <YAxis yAxisId="right" orientation="right" stroke="#D9262E" tickFormatter={currencyFormatter} tick={{ fontSize: 12 }}>
-                             <Label value={lineValue.label} angle={-90} offset={-15} position="insideRight" style={{ textAnchor: 'middle' }} fill="#D9262E" fontSize={14} />
+                             <Label value={lineAxisLabel} angle={-90} offset={-15} position="insideRight" style={{ textAnchor: 'middle' }} fill="#D9262E" fontSize={14} />
                         </YAxis>
-                        <Tooltip content={<CustomTooltip barLabel={yAxisLabel} lineLabel={lineValue.label}/>} cursor={{ fill: 'rgba(229, 231, 235, 0.5)' }} />
-                        <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
-                        <Bar yAxisId="left" dataKey={value.dataKey} name={yAxisLabel} fill="#00A3E0" radius={[4, 4, 0, 0]} />
-                        <Line yAxisId="right" type="monotone" dataKey={lineValue.dataKey} name={lineValue.label} stroke="#D9262E" strokeWidth={2} activeDot={{ r: 8 }} />
+                        <Tooltip content={<CustomTooltip barLabel={yAxisLabel} lineLabel={lineAxisLabel}/>} cursor={{ fill: 'rgba(229, 231, 235, 0.5)' }} />
+                        <Legend content={renderLegend}/>
+                        {seriesOrder.map(type =>
+                            type === 'bar' ? (
+                                <Bar key="bar" yAxisId="left" dataKey={value.dataKey} name={yAxisLabel} fill="#00A3E0" radius={[4, 4, 0, 0]} />
+                            ) : (
+                                <Line key="line" yAxisId="right" type="monotone" dataKey={lineValue.dataKey} name={lineAxisLabel} stroke="#D9262E" strokeWidth={2} activeDot={{ r: 8 }} />
+                            )
+                        )}
                     </ComposedChart>
                 </ResponsiveContainer>
             </div>
