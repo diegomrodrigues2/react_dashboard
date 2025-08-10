@@ -150,7 +150,7 @@ const ScatterChart: React.FC<ScatterChartProps> = ({ data, title, config, showTr
             {playAxis && (
                 <div className="flex items-center justify-center gap-4 mb-4 p-2 bg-gray-50 rounded-lg">
                     <button onClick={() => isPlaying ? stopPlaying() : startPlaying()} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                        {isPlaying ? <PauseIcon className="w-6 h-6 text-gray-700" /> : <PlayIcon className="w-6 h-6 text-gray-700" />}
+                        {isPlaying ? <PauseIcon title="Pausar" className="w-6 h-6 text-gray-700" /> : <PlayIcon title="Reproduzir" className="w-6 h-6 text-gray-700" />}
                     </button>
                     <label htmlFor="play-axis-slider" className="text-sm font-medium text-gray-600 whitespace-nowrap">{playAxis.label}: <span className="font-bold text-gray-800">{currentPlayAxisValue}</span></label>
                     <input

@@ -394,7 +394,7 @@ const Dashboard: React.FC = () => {
                 const f = filterOptions[filterKey];
                 return <MultiSelectFilter key={filterKey} placeholder={`Filtrar por ${f.label}...`} options={f.options} selected={f.selected} onChange={f.setter} />
             })}
-             {hasFilters && <button onClick={clearFilters} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors" title="Limpar Filtros"><XIcon className="w-5 h-5"/></button>}
+            {hasFilters && <button onClick={clearFilters} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors" title="Limpar Filtros"><XIcon title="Limpar Filtros" className="w-5 h-5"/></button>}
         </div>
       </div>
       

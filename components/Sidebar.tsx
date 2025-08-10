@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ menuItems, activeTabId, onSelectTab, 
             role="menuitem"
             aria-current={activeTabId === item.id ? 'page' : undefined}
           >
-            <item.icon className="w-5 h-5 flex-shrink-0" />
+            <item.icon title={item.label} className="w-5 h-5 flex-shrink-0" />
             {isOpen && <span className="truncate">{item.label}</span>}
           </button>
         ))}
