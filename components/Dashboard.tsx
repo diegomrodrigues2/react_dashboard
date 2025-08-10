@@ -19,51 +19,16 @@ import TreemapChart from './charts/TreemapChart.tsx';
 import Matrix from './charts/Matrix.tsx';
 import XIcon from './icons/XIcon.tsx';
 import DataTable from './DataTable.tsx';
-import { SalesData, DashboardWidget, KpiConfig, DataTableConfig, DynamicChartConfig, AggregationType, MatrixConfig, BubbleMapConfig, ChoroplethMapConfig, HeatmapConfig } from '../types.ts';
+import { SalesData, DashboardWidget, KpiConfig, DataTableConfig, DynamicChartConfig, MatrixConfig, BubbleMapConfig, ChoroplethMapConfig, HeatmapConfig } from '../types.ts';
 import { DASHBOARD_CONFIG } from './dashboardConfig.ts';
 import { ALL_CATEGORIES } from '../constants.ts';
+import { fetchSalesData, fetchWaterfallData, fetchFunnelData } from '../services/dataService.ts';
+import { processChartData, ALL_MONTHS } from '../utils/dashboardData.ts';
 import BubbleMap from './charts/BubbleMap.tsx';
 import ChoroplethMap from './charts/ChoroplethMap.tsx';
 import HeatmapChart from './charts/HeatmapChart.tsx';
 
 export type { SalesData };
-
-const rawSalesData: SalesData[] = [
-    { id: 'sale1', mes: 'Jan', regiao: 'Sudeste', categoria: 'Eletrônicos', vendas: 4000, lucro: 2400, clientes: 20, coordinates: [-46.63, -23.55] },
-    { id: 'sale2', mes: 'Jan', regiao: 'Sul', categoria: 'Vestuário', vendas: 2200, lucro: 900, clientes: 15, coordinates: [-51.22, -30.03] },
-    { id: 'sale3', mes: 'Fev', regiao: 'Sudeste', categoria: 'Eletrônicos', vendas: 4500, lucro: 2800, clientes: 22, coordinates: [-46.63, -23.55] },
-    { id: 'sale4', mes: 'Fev', regiao: 'Nordeste', categoria: 'Alimentos', vendas: 3100, lucro: 1200, clientes: 30, coordinates: [-38.50, -12.97] },
-    { id: 'sale5', mes: 'Mar', regiao: 'Sudeste', categoria: 'Vestuário', vendas: 3500, lucro: 1500, clientes: 18, coordinates: [-46.63, -23.55] },
-    { id: 'sale6', mes: 'Mar', regiao: 'Norte', categoria: 'Eletrônicos', vendas: 1500, lucro: -200, clientes: 8, coordinates: [-60.02, -3.11] },
-    { id: 'sale7', mes: 'Abr', regiao: 'Centro-Oeste', categoria: 'Livros', vendas: 1200, lucro: 500, clientes: 10, coordinates: [-47.88, -15.79] },
-    { id: 'sale8', mes: 'Abr', regiao: 'Sul', categoria: 'Eletrônicos', vendas: 3800, lucro: 2100, clientes: 19, coordinates: [-51.22, -30.03] },
-    { id: 'sale9', mes: 'Mai', regiao: 'Sudeste', categoria: 'Alimentos', vendas: 5200, lucro: 2500, clientes: 45, coordinates: [-46.63, -23.55] },
-    { id: 'sale10', mes: 'Mai', regiao: 'Nordeste', categoria: 'Vestuário', vendas: 2800, lucro: 1100, clientes: 25, coordinates: [-38.50, -12.97] },
-    { id: 'sale11', mes: 'Jun', regiao: 'Sul', categoria: 'Livros', vendas: 900, lucro: 350, clientes: 7, coordinates: [-51.22, -30.03] },
-    { id: 'sale12', mes: 'Jun', regiao: 'Sudeste', categoria: 'Eletrônicos', vendas: 6100, lucro: 3500, clientes: 35, coordinates: [-46.63, -23.55] },
-    { id: 'sale13', mes: 'Jul', regiao: 'Norte', categoria: 'Alimentos', vendas: 2100, lucro: 800, clientes: 20, coordinates: [-60.02, -3.11] },
-    { id: 'sale14', mes: 'Jul', regiao: 'Centro-Oeste', categoria: 'Vestuário', vendas: 1800, lucro: 750, clientes: 15, coordinates: [-47.88, -15.79] },
-];
-
-const waterfallSourceData = [
-    { category: 'Vendas Brutas', value: 25000 },
-    { category: 'Devoluções', value: -1500 },
-    { category: 'Custo de Mercadoria', value: -11000 },
-    { category: 'Despesas Operacionais', value: -4500 },
-    { category: 'Receita de Juros', value: 800 },
-];
-
-const funnelSourceData = [
-    { stage: 'Leads', value: 5000 },
-    { stage: 'Leads Qualificados', value: 3500 },
-    { stage: 'Prospectos', value: 2000 },
-    { stage: 'Contratos', value: 1000 },
-    { stage: 'Fechado', value: 650 },
-];
-
-
-const allMonths = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'];
-const allRegions = [...new Set(rawSalesData.map(d => d.regiao))].sort();
 // ALL_CATEGORIES is now imported from constants.ts
 
 const componentMap = { KpiCard, LineChart, BarChart, PieChart, DataTable, ScatterChart, AreaChart, ComboChart, WaterfallChart, FunnelChart, TreemapChart, Matrix, BubbleMap, ChoroplethMap, HeatmapChart };
@@ -90,166 +55,47 @@ const MultiSelectFilter = ({ options, selected, onChange, placeholder }: {
     );
 };
 
-const aggregate = (items: SalesData[], dataKey: keyof SalesData, type: AggregationType = 'SUM'): number => {
-    switch (type) {
-        case 'SUM':
-            return items.reduce((sum, item) => sum + (Number(item[dataKey]) || 0), 0);
-        case 'COUNT':
-            return items.length;
-        case 'AVERAGE':
-            const sum = items.reduce((s, item) => s + (Number(item[dataKey]) || 0), 0);
-            return items.length > 0 ? sum / items.length : 0;
-        case 'NONE':
-             const firstValue = items.length > 0 ? items[0][dataKey] : undefined;
-             return typeof firstValue === 'number' ? firstValue : 0;
-        default:
-            return 0;
-    }
-};
-
-const processChartData = (data: any[], config: DynamicChartConfig): any[] => {
-    const { chartType, category, value, legend, stackType, colorValue } = config;
-
-    if (chartType === 'Scatter' || chartType === 'Waterfall' || chartType === 'Funnel') {
-        // These charts handle their own data processing or use static/pre-processed data.
-        return data;
-    }
-    
-    if (chartType === 'Treemap') {
-        const categoryKey = category?.dataKey;
-        const sizeKey = value?.dataKey;
-        const colorKey = colorValue?.dataKey;
-
-        if (!categoryKey || !sizeKey || !colorKey || !data) return [];
-
-        const groups = new Map<string, SalesData[]>();
-        (data as SalesData[]).forEach(item => {
-            const key = String(item[categoryKey as keyof SalesData]);
-            if (!groups.has(key)) groups.set(key, []);
-            groups.get(key)!.push(item);
-        });
-        
-        const treemapData = Array.from(groups.entries()).map(([key, items]) => {
-          return {
-            name: key,
-            size: aggregate(items, sizeKey as keyof SalesData, value?.aggregation || 'SUM'),
-            colorMetric: aggregate(items, colorKey as keyof SalesData, colorValue?.aggregation || 'AVERAGE'),
-          };
-        });
-        return treemapData;
-    }
-
-    if (chartType === 'Combo') {
-        const categoryKey = category?.dataKey;
-        const barValueKey = value?.dataKey;
-        const lineValueKey = config.lineValue?.dataKey;
-  
-        if (!categoryKey || !barValueKey || !lineValueKey) return [];
-  
-        const groups = new Map<string, SalesData[]>();
-        data.forEach(item => {
-            const key = String(item[categoryKey as keyof SalesData]);
-            if (!groups.has(key)) groups.set(key, []);
-            groups.get(key)!.push(item);
-        });
-        
-        const aggregatedList: any[] = [];
-        groups.forEach((items, key) => {
-          const barValue = aggregate(items, barValueKey as keyof SalesData, value.aggregation);
-          const lineValue = aggregate(items, lineValueKey as keyof SalesData, config.lineValue.aggregation);
-          aggregatedList.push({
-            [categoryKey]: key,
-            [barValueKey]: barValue,
-            [lineValueKey]: lineValue,
-          });
-        });
-        // Sort data for time-series consistency
-        const sortedMonths = allMonths;
-        return aggregatedList.sort((a,b) => sortedMonths.indexOf(a[categoryKey]) - sortedMonths.indexOf(b[categoryKey]));
-    }
-    
-
-    // This logic is for Bar, Line, Pie, Area
-    const categoryKey = category?.dataKey;
-    const valueKey = value?.dataKey;
-    if (!categoryKey || !valueKey) return [];
-
-    const groups = new Map<string, SalesData[]>();
-    data.forEach(item => {
-        const categoryValue = String(item[categoryKey as keyof SalesData]);
-        const legendValue = legend ? String(item[legend.dataKey as keyof SalesData]) : 'default';
-        const key = `${categoryValue}__${legendValue}`;
-        if (!groups.has(key)) {
-            groups.set(key, []);
-        }
-        groups.get(key)!.push(item);
-    });
-
-    const aggregatedList: any[] = [];
-    groups.forEach((items, key) => {
-        const [categoryValue, legendValue] = key.split('__');
-        const aggregatedValue = aggregate(items, valueKey as keyof SalesData, value.aggregation);
-        const entry: any = {
-            [categoryKey]: categoryValue,
-            [valueKey]: aggregatedValue,
-        };
-        if (legend) {
-            entry[legend.dataKey as keyof SalesData] = legendValue;
-        }
-        aggregatedList.push(entry);
-    });
-    
-    if (chartType === 'Pie') {
-        return aggregatedList.map(item => ({
-            name: item[categoryKey],
-            value: item[valueKey],
-        }));
-    }
-
-    if (legend) {
-        const pivotedMap = new Map<string, any>();
-        aggregatedList.forEach(item => {
-            const categoryValue = item[categoryKey];
-            const legendValue = item[legend.dataKey as keyof SalesData];
-            const numericValue = item[valueKey];
-
-            if (!pivotedMap.has(categoryValue)) {
-                pivotedMap.set(categoryValue, { [categoryKey]: categoryValue });
-            }
-            const pivotedEntry = pivotedMap.get(categoryValue)!;
-            pivotedEntry[legendValue] = numericValue;
-        });
-
-        const finalData = Array.from(pivotedMap.values());
-        
-        if (stackType === '100%stacked') {
-            finalData.forEach(row => {
-                const legendKeys = Object.keys(row).filter(k => k !== categoryKey);
-                const total = legendKeys.reduce((sum, key) => sum + (row[key] || 0), 0);
-                if (total > 0) {
-                    legendKeys.forEach(key => {
-                        row[key] = (row[key] || 0) / total;
-                    });
-                }
-            });
-        }
-        return finalData;
-    }
-
-    return aggregatedList;
-};
 
 const Dashboard: React.FC = () => {
+    const [salesData, setSalesData] = useState<SalesData[]>([]);
+    const [waterfallData, setWaterfallData] = useState<any[]>([]);
+    const [funnelData, setFunnelData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
     const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
     const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-    const filteredData = useMemo(() => rawSalesData.filter(item => 
+    useEffect(() => {
+        const load = async () => {
+            try {
+                setLoading(true);
+                const [sales, waterfall, funnel] = await Promise.all([
+                    fetchSalesData(),
+                    fetchWaterfallData(),
+                    fetchFunnelData()
+                ]);
+                setSalesData(sales);
+                setWaterfallData(waterfall);
+                setFunnelData(funnel);
+            } catch (e) {
+                setError('Erro ao carregar dados');
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    const allRegions = useMemo(() => [...new Set(salesData.map(d => d.regiao))].sort(), [salesData]);
+
+    const filteredData = useMemo(() => salesData.filter(item =>
         (selectedMonths.length === 0 || selectedMonths.includes(item.mes)) &&
         (selectedRegions.length === 0 || selectedRegions.includes(item.regiao)) &&
         (selectedCategories.length === 0 || selectedCategories.includes(item.categoria))
-    ), [selectedMonths, selectedRegions, selectedCategories]);
-    
+    ), [salesData, selectedMonths, selectedRegions, selectedCategories]);
+
     const clearFilters = () => {
         setSelectedMonths([]);
         setSelectedRegions([]);
@@ -265,10 +111,10 @@ const Dashboard: React.FC = () => {
             totalClientes: filteredData.reduce((acc, item) => acc + item.clientes, 0),
             ticketMedio: filteredData.reduce((acc, item) => acc + item.clientes, 0) > 0 ? filteredData.reduce((acc, item) => acc + item.vendas, 0) / filteredData.reduce((acc, item) => acc + item.clientes, 0) : 0,
         };
-        
+
         dataMap.detailedData = filteredData;
-        dataMap.waterfallData = waterfallSourceData;
-        dataMap.funnelData = funnelSourceData;
+        dataMap.waterfallData = waterfallData;
+        dataMap.funnelData = funnelData;
 
         DASHBOARD_CONFIG.widgets.forEach(widget => {
             const isDynamicChart = !['KpiCard', 'DataTable', 'Matrix', 'BubbleMap', 'ChoroplethMap', 'HeatmapChart'].includes(widget.component);
@@ -280,10 +126,10 @@ const Dashboard: React.FC = () => {
                 }
             }
         });
-        
+
         return dataMap;
 
-    }, [filteredData]);
+    }, [filteredData, waterfallData, funnelData]);
     
     const getWidgetProps = useCallback((widget: DashboardWidget): any => {
         const { id, title, config, component } = widget;
@@ -373,9 +219,17 @@ const Dashboard: React.FC = () => {
     const noDataAfterFilter = hasFilters && filteredData.length === 0;
 
     const filterOptions: Record<string, {label: string, options: string[], selected: string[], setter: (val: string[]) => void}> = {
-        month: { label: "Mês", options: allMonths, selected: selectedMonths, setter: setSelectedMonths },
+        month: { label: "Mês", options: ALL_MONTHS, selected: selectedMonths, setter: setSelectedMonths },
         region: { label: "Região", options: allRegions, selected: selectedRegions, setter: setSelectedRegions },
         category: { label: "Categoria", options: ALL_CATEGORIES, selected: selectedCategories, setter: setSelectedCategories },
+    }
+
+    if (loading) {
+        return <div className="p-4">Carregando...</div>;
+    }
+
+    if (error) {
+        return <div className="p-4 text-red-500">{error}</div>;
     }
 
   return (
