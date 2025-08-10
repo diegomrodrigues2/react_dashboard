@@ -9,6 +9,7 @@ interface AreaChartProps {
   data: any[];
   title: string;
   config: DynamicChartConfig;
+  gradientColors?: [string, string];
 }
 
 const currencyFormatter = (val: any) => {
@@ -45,7 +46,7 @@ const CustomTooltip = ({ active, payload, label, config }: any) => {
 };
 
 
-const AreaChart: React.FC<AreaChartProps> = ({ data, title, config }) => {
+const AreaChart: React.FC<AreaChartProps> = ({ data, title, config, gradientColors }) => {
   const { category, value, legend, stackType = 'none' } = config;
 
   const areaDataKeys = useMemo(() => {
@@ -75,12 +76,19 @@ const AreaChart: React.FC<AreaChartProps> = ({ data, title, config }) => {
               stackOffset={is100Percent ? 'expand' : undefined}
             >
               <defs>
-                {areaDataKeys.map((area, index) => (
+                {gradientColors ? (
+                  <linearGradient id="customGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={gradientColors[0]} stopOpacity={isStacked ? 0.8 : 0.6} />
+                    <stop offset="95%" stopColor={gradientColors[1] ?? gradientColors[0]} stopOpacity={isStacked ? 0.2 : 0} />
+                  </linearGradient>
+                ) : (
+                  areaDataKeys.map((area, index) => (
                     <linearGradient key={`color-${area.key}`} id={`color-${area.key}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={areaColors[index % areaColors.length]} stopOpacity={isStacked ? 0.8 : 0.6}/>
-                        <stop offset="95%" stopColor={areaColors[index % areaColors.length]} stopOpacity={isStacked ? 0.2 : 0}/>
+                      <stop offset="5%" stopColor={areaColors[index % areaColors.length]} stopOpacity={isStacked ? 0.8 : 0.6} />
+                      <stop offset="95%" stopColor={areaColors[index % areaColors.length]} stopOpacity={isStacked ? 0.2 : 0} />
                     </linearGradient>
-                ))}
+                  ))
+                )}
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey={category?.dataKey} stroke="#6B7280" tick={{ fontSize: 12 }}>
@@ -112,7 +120,7 @@ const AreaChart: React.FC<AreaChartProps> = ({ data, title, config }) => {
                       stroke={areaColors[index % areaColors.length]}
                       strokeWidth={2}
                       fillOpacity={1}
-                      fill={`url(#color-${area.key})`}
+                      fill={gradientColors ? 'url(#customGradient)' : `url(#color-${area.key})`}
                       stackId={isStacked ? '1' : undefined}
                   />
               ))}
