@@ -1,7 +1,17 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
-    ScatterChart as RechartsScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label
+    ScatterChart as RechartsScatterChart,
+    Scatter,
+    XAxis,
+    YAxis,
+    ZAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    Label,
+    Line
 } from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 import PlayIcon from '../icons/PlayIcon.tsx';
@@ -13,6 +23,7 @@ interface ScatterChartProps {
     data: any[];
     title: string;
     config: DynamicChartConfig;
+    showTrendline?: boolean;
 }
 
 const CustomTooltip = ({ active, payload, config }: any) => {
@@ -37,7 +48,7 @@ const CustomTooltip = ({ active, payload, config }: any) => {
     return null;
 };
 
-const ScatterChart: React.FC<ScatterChartProps> = ({ data, title, config }) => {
+const ScatterChart: React.FC<ScatterChartProps> = ({ data, title, config, showTrendline = false }) => {
     const { x, y, size, legend, playAxis, category } = config;
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -56,6 +67,26 @@ const ScatterChart: React.FC<ScatterChartProps> = ({ data, title, config }) => {
         if (!playAxis || !currentPlayAxisValue) return data;
         return data.filter(d => d[playAxis.dataKey] === currentPlayAxisValue);
     }, [data, playAxis, currentPlayAxisValue]);
+
+    const trendLineData = useMemo(() => {
+        if (!showTrendline || !x?.dataKey || !y?.dataKey || filteredData.length < 2) return [];
+        const n = filteredData.length;
+        const sumX = filteredData.reduce((acc, cur) => acc + cur[x.dataKey], 0);
+        const sumY = filteredData.reduce((acc, cur) => acc + cur[y.dataKey], 0);
+        const sumXY = filteredData.reduce((acc, cur) => acc + cur[x.dataKey] * cur[y.dataKey], 0);
+        const sumXX = filteredData.reduce((acc, cur) => acc + cur[x.dataKey] * cur[x.dataKey], 0);
+        const denominator = n * sumXX - sumX * sumX;
+        if (denominator === 0) return [];
+        const slope = (n * sumXY - sumX * sumY) / denominator;
+        const intercept = (sumY - slope * sumX) / n;
+        const xValues = filteredData.map(d => d[x.dataKey]);
+        const minX = Math.min(...xValues);
+        const maxX = Math.max(...xValues);
+        return [
+            { [x.dataKey]: minX, trend: slope * minX + intercept },
+            { [x.dataKey]: maxX, trend: slope * maxX + intercept }
+        ];
+    }, [showTrendline, filteredData, x?.dataKey, y?.dataKey]);
 
     const series = useMemo(() => {
         if (!legend?.dataKey) {
@@ -147,6 +178,10 @@ const ScatterChart: React.FC<ScatterChartProps> = ({ data, title, config }) => {
                         {size?.dataKey && <ZAxis type="number" dataKey={size.dataKey} name={size.label} range={bubbleSizeRange} />}
                         <Tooltip content={<CustomTooltip config={config} />} cursor={{ strokeDasharray: '3 3' }} />
                         <Legend wrapperStyle={{fontSize: "12px", paddingTop: "40px"}} />
+
+                        {showTrendline && trendLineData.length > 0 && (
+                            <Line type="linear" dataKey="trend" data={trendLineData} stroke="#8884d8" dot={false} />
+                        )}
 
                         {series.map((s, index) => (
                             <Scatter key={s.name} name={s.name} data={s.data} fill={lineColors[index % lineColors.length]} shape="circle" />
