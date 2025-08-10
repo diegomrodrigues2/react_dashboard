@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FocusTrap from 'focus-trap-react';
+import { DndContext, DragEndEvent, useDraggable } from '@dnd-kit/core';
 import { FieldConfig, DataItem } from '../types.ts';
 import XIcon from './icons/XIcon.tsx';
 
@@ -30,7 +31,29 @@ const Modal: React.FC<ModalProps> = ({
   cancelButtonText = "Cancelar",
 }) => {
   const [formData, setFormData] = useState<Partial<DataItem>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isVisible, setIsVisible] = useState(isOpen);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: 'modal' });
+
+  const combinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      modalRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef]
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+    } else {
+      const timer = setTimeout(() => setIsVisible(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -68,38 +91,53 @@ const Modal: React.FC<ModalProps> = ({
   }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    // For number fields, ensure value is stored appropriately or validated client-side.
-    // HTML input type="number" returns string in `value`, but `valueAsNumber` can be used.
-    // For simplicity here, we'll store as string and let backend/further logic parse.
-    // Or, if strictly number is needed in frontend state:
-    // const processedValue = type === 'number' ? (value === '' ? '' : parseFloat(value)) : value;
-    
+    const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Potentially parse numeric strings to numbers before submit if DataItem expects numbers
-    const submittedData = { ...formData };
+
+    const submittedData: Partial<DataItem> = { ...formData };
+    const newErrors: Record<string, string> = {};
+
     fields.forEach(field => {
-      if (field.type === 'number') {
+      // @ts-ignore
+      const value = formData[field.name];
+      if (field.required && (value === '' || value === undefined || value === null)) {
+        newErrors[field.name] = 'Campo obrigatório';
+      }
+      if (field.type === 'number' && typeof value === 'string' && value.trim() !== '') {
         // @ts-ignore
-        const value = formData[field.name];
-        if (typeof value === 'string' && value.trim() !== '') {
-            // @ts-ignore
-          submittedData[field.name] = parseFloat(value);
-        } else if (typeof value !== 'number') {
-            // @ts-ignore
-           submittedData[field.name] = undefined; // Or null, or handle as error
-        }
+        submittedData[field.name] = parseFloat(value);
       }
     });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstErrorField = Object.keys(newErrors)[0];
+      const el = modalRef.current?.querySelector<HTMLElement>(`#${firstErrorField}`);
+      el?.focus();
+      return;
+    }
+
+    setErrors({});
     onSubmit(submittedData);
   };
 
-  if (!isOpen) return null;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { delta } = event;
+    setDragOffset(prev => ({ x: prev.x + delta.x, y: prev.y + delta.y }));
+  };
+
+  // Expose for tests
+  if (process.env.NODE_ENV === 'test') {
+    // @ts-ignore
+    (window as any).__modalDragEnd = handleDragEnd;
+  }
+
+  if (!isVisible) return null;
 
   const renderInput = (field: FieldConfig) => {
     const commonProps = {
@@ -109,8 +147,10 @@ const Modal: React.FC<ModalProps> = ({
       value: formData[field.name] ?? '',
       onChange: handleChange,
       required: field.required,
-      className: "mt-1 block w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#00A3E0] focus:border-[#00A3E0] sm:text-sm placeholder-gray-400"
-    };
+      className: `mt-1 block w-full px-3 py-2 bg-white text-gray-900 border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-[#00A3E0] focus:border-[#00A3E0] sm:text-sm placeholder-gray-400`,
+      'aria-invalid': !!errors[field.name],
+      'aria-describedby': errors[field.name] ? `${field.name}-error` : undefined,
+    } as const;
 
     if (field.type === 'select' && field.options) {
       return (
@@ -136,10 +176,30 @@ const Modal: React.FC<ModalProps> = ({
 
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <FocusTrap active={isOpen}>
-        <div ref={modalRef} className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <DndContext onDragEnd={handleDragEnd}>
+        <FocusTrap active={isOpen} focusTrapOptions={{ fallbackFocus: '#modal-content' }}>
+          <div
+            id="modal-content"
+            tabIndex={-1}
+            ref={combinedRef}
+            data-testid="modal-content"
+            style={{
+              transform: `translate3d(${dragOffset.x + (transform?.x ?? 0)}px, ${dragOffset.y + (transform?.y ?? 0)}px, 0)`,
+            }}
+            className={`bg-white rounded-lg shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto transition-transform transition-opacity duration-200 ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          >
+        <div
+          {...listeners}
+          {...attributes}
+          data-testid="modal-header"
+          className="flex justify-between items-center mb-4 cursor-move"
+        >
           <h2 id="modal-title" className="text-2xl font-semibold text-gray-800">{title}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Fechar modal">
             <XIcon title="Fechar" className="w-6 h-6" />
@@ -148,7 +208,7 @@ const Modal: React.FC<ModalProps> = ({
         {bodyContent ? (
           <div>{bodyContent}</div>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="space-y-4">
               {fields.map(field => (
                 <div key={field.name}>
@@ -156,6 +216,11 @@ const Modal: React.FC<ModalProps> = ({
                     {field.label} {field.required && <span className="text-red-500">*</span>}
                   </label>
                   {renderInput(field)}
+                  {errors[field.name] && (
+                    <p id={`${field.name}-error`} className="mt-1 text-sm text-red-600">
+                      {errors[field.name]}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -187,16 +252,17 @@ const Modal: React.FC<ModalProps> = ({
              {cancelButtonText}
            </button>
            <button
-             type="button" 
-             onClick={() => onSubmit({})} 
+             type="button"
+             onClick={() => onSubmit({})}
              className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${submitButtonClassName}`}
            >
              {submitButtonText}
            </button>
          </div>
         )}
-      </div>
-      </FocusTrap>
+          </div>
+        </FocusTrap>
+      </DndContext>
     </div>
   );
 };
