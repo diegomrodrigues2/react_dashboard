@@ -19,52 +19,14 @@ import TreemapChart from './charts/TreemapChart.tsx';
 import Matrix from './charts/Matrix.tsx';
 import XIcon from './icons/XIcon.tsx';
 import DataTable from './DataTable.tsx';
-import { SalesData, DashboardWidget, KpiConfig, DataTableConfig, DynamicChartConfig, AggregationType, MatrixConfig, BubbleMapConfig, ChoroplethMapConfig, HeatmapConfig } from '../types.ts';
-import { DASHBOARD_CONFIG } from './dashboardConfig.ts';
+import { SalesData, DashboardWidget, KpiConfig, DataTableConfig, DynamicChartConfig, AggregationType, MatrixConfig, BubbleMapConfig, ChoroplethMapConfig, HeatmapConfig, DashboardConfig } from '../types.ts';
 import { ALL_CATEGORIES } from '../constants.ts';
+import { getSalesData, getWaterfallData, getFunnelData, getAllMonths, getDashboardConfig } from '../services/dashboardData.ts';
 import BubbleMap from './charts/BubbleMap.tsx';
 import ChoroplethMap from './charts/ChoroplethMap.tsx';
 import HeatmapChart from './charts/HeatmapChart.tsx';
 
 export type { SalesData };
-
-const rawSalesData: SalesData[] = [
-    { id: 'sale1', mes: 'Jan', regiao: 'Sudeste', categoria: 'Eletrônicos', vendas: 4000, lucro: 2400, clientes: 20, coordinates: [-46.63, -23.55] },
-    { id: 'sale2', mes: 'Jan', regiao: 'Sul', categoria: 'Vestuário', vendas: 2200, lucro: 900, clientes: 15, coordinates: [-51.22, -30.03] },
-    { id: 'sale3', mes: 'Fev', regiao: 'Sudeste', categoria: 'Eletrônicos', vendas: 4500, lucro: 2800, clientes: 22, coordinates: [-46.63, -23.55] },
-    { id: 'sale4', mes: 'Fev', regiao: 'Nordeste', categoria: 'Alimentos', vendas: 3100, lucro: 1200, clientes: 30, coordinates: [-38.50, -12.97] },
-    { id: 'sale5', mes: 'Mar', regiao: 'Sudeste', categoria: 'Vestuário', vendas: 3500, lucro: 1500, clientes: 18, coordinates: [-46.63, -23.55] },
-    { id: 'sale6', mes: 'Mar', regiao: 'Norte', categoria: 'Eletrônicos', vendas: 1500, lucro: -200, clientes: 8, coordinates: [-60.02, -3.11] },
-    { id: 'sale7', mes: 'Abr', regiao: 'Centro-Oeste', categoria: 'Livros', vendas: 1200, lucro: 500, clientes: 10, coordinates: [-47.88, -15.79] },
-    { id: 'sale8', mes: 'Abr', regiao: 'Sul', categoria: 'Eletrônicos', vendas: 3800, lucro: 2100, clientes: 19, coordinates: [-51.22, -30.03] },
-    { id: 'sale9', mes: 'Mai', regiao: 'Sudeste', categoria: 'Alimentos', vendas: 5200, lucro: 2500, clientes: 45, coordinates: [-46.63, -23.55] },
-    { id: 'sale10', mes: 'Mai', regiao: 'Nordeste', categoria: 'Vestuário', vendas: 2800, lucro: 1100, clientes: 25, coordinates: [-38.50, -12.97] },
-    { id: 'sale11', mes: 'Jun', regiao: 'Sul', categoria: 'Livros', vendas: 900, lucro: 350, clientes: 7, coordinates: [-51.22, -30.03] },
-    { id: 'sale12', mes: 'Jun', regiao: 'Sudeste', categoria: 'Eletrônicos', vendas: 6100, lucro: 3500, clientes: 35, coordinates: [-46.63, -23.55] },
-    { id: 'sale13', mes: 'Jul', regiao: 'Norte', categoria: 'Alimentos', vendas: 2100, lucro: 800, clientes: 20, coordinates: [-60.02, -3.11] },
-    { id: 'sale14', mes: 'Jul', regiao: 'Centro-Oeste', categoria: 'Vestuário', vendas: 1800, lucro: 750, clientes: 15, coordinates: [-47.88, -15.79] },
-];
-
-const waterfallSourceData = [
-    { category: 'Vendas Brutas', value: 25000 },
-    { category: 'Devoluções', value: -1500 },
-    { category: 'Custo de Mercadoria', value: -11000 },
-    { category: 'Despesas Operacionais', value: -4500 },
-    { category: 'Receita de Juros', value: 800 },
-];
-
-const funnelSourceData = [
-    { stage: 'Leads', value: 5000 },
-    { stage: 'Leads Qualificados', value: 3500 },
-    { stage: 'Prospectos', value: 2000 },
-    { stage: 'Contratos', value: 1000 },
-    { stage: 'Fechado', value: 650 },
-];
-
-
-const allMonths = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'];
-const allRegions = [...new Set(rawSalesData.map(d => d.regiao))].sort();
-// ALL_CATEGORIES is now imported from constants.ts
 
 const componentMap = { KpiCard, LineChart, BarChart, PieChart, DataTable, ScatterChart, AreaChart, ComboChart, WaterfallChart, FunnelChart, TreemapChart, Matrix, BubbleMap, ChoroplethMap, HeatmapChart };
 
@@ -244,11 +206,39 @@ const Dashboard: React.FC = () => {
     const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-    const filteredData = useMemo(() => rawSalesData.filter(item => 
+    const [rawSalesData, setRawSalesData] = useState<SalesData[]>([]);
+    const [waterfallSourceData, setWaterfallSourceData] = useState<any[]>([]);
+    const [funnelSourceData, setFunnelSourceData] = useState<any[]>([]);
+    const [allMonths, setAllMonths] = useState<string[]>([]);
+    const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const [sales, waterfall, funnel, months, config] = await Promise.all([
+                getSalesData(),
+                getWaterfallData(),
+                getFunnelData(),
+                getAllMonths(),
+                getDashboardConfig()
+            ]);
+            setRawSalesData(sales);
+            setWaterfallSourceData(waterfall);
+            setFunnelSourceData(funnel);
+            setAllMonths(months);
+            setDashboardConfig(config);
+            setLoading(false);
+        };
+        fetchData();
+    }, []);
+
+    const allRegions = useMemo(() => [...new Set(rawSalesData.map(d => d.regiao))].sort(), [rawSalesData]);
+
+    const filteredData = useMemo(() => rawSalesData.filter(item =>
         (selectedMonths.length === 0 || selectedMonths.includes(item.mes)) &&
         (selectedRegions.length === 0 || selectedRegions.includes(item.regiao)) &&
         (selectedCategories.length === 0 || selectedCategories.includes(item.categoria))
-    ), [selectedMonths, selectedRegions, selectedCategories]);
+    ), [rawSalesData, selectedMonths, selectedRegions, selectedCategories]);
     
     const clearFilters = () => {
         setSelectedMonths([]);
@@ -257,6 +247,7 @@ const Dashboard: React.FC = () => {
     };
 
     const widgetData = useMemo(() => {
+        if (!dashboardConfig) return {};
         const dataMap: Record<string, any> = {};
 
         dataMap.kpiData = {
@@ -270,7 +261,7 @@ const Dashboard: React.FC = () => {
         dataMap.waterfallData = waterfallSourceData;
         dataMap.funnelData = funnelSourceData;
 
-        DASHBOARD_CONFIG.widgets.forEach(widget => {
+        dashboardConfig.widgets.forEach(widget => {
             const isDynamicChart = !['KpiCard', 'DataTable', 'Matrix', 'BubbleMap', 'ChoroplethMap', 'HeatmapChart'].includes(widget.component);
             if (isDynamicChart) {
                 const config = widget.config as DynamicChartConfig;
@@ -283,7 +274,7 @@ const Dashboard: React.FC = () => {
         
         return dataMap;
 
-    }, [filteredData]);
+    }, [filteredData, waterfallSourceData, funnelSourceData, dashboardConfig]);
     
     const getWidgetProps = useCallback((widget: DashboardWidget): any => {
         const { id, title, config, component } = widget;
@@ -378,12 +369,16 @@ const Dashboard: React.FC = () => {
         category: { label: "Categoria", options: ALL_CATEGORIES, selected: selectedCategories, setter: setSelectedCategories },
     }
 
+    if (loading || !dashboardConfig) {
+        return <div className="text-center p-10">Carregando...</div>;
+    }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
          <h1 className="text-3xl font-bold text-gray-800">Dashboard Interativo</h1>
          <div className="flex flex-wrap items-center justify-end gap-3 bg-white p-3 rounded-lg shadow-sm border border-gray-200 w-full md:w-auto">
-            {DASHBOARD_CONFIG.filters.map(filterKey => {
+            {dashboardConfig.filters.map(filterKey => {
                 const f = filterOptions[filterKey];
                 return <MultiSelectFilter key={filterKey} placeholder={`Filtrar por ${f.label}...`} options={f.options} selected={f.selected} onChange={f.setter} />
             })}
@@ -398,7 +393,7 @@ const Dashboard: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {DASHBOARD_CONFIG.widgets.map(widget => {
+            {dashboardConfig.widgets.map(widget => {
                 const Component = componentMap[widget.component];
                 const props = getWidgetProps(widget);
                                 
