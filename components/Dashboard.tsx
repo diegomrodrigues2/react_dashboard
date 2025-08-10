@@ -260,16 +260,77 @@ const Dashboard: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (dashboardConfig) {
-            const initialLayout = dashboardConfig.widgets.map((w, idx) => ({
-                i: w.id,
-                x: w.layout?.x ?? (idx % 12),
-                y: w.layout?.y ?? Math.floor(idx / 12),
-                w: w.layout?.w ?? 3,
-                h: w.layout?.h ?? 2,
-            }));
-            setLayout(initialLayout);
-        }
+        if (!dashboardConfig) return;
+
+        // Infer default size from gridClass or component when layout is missing
+        const spanFromGridClass = (gridClass?: string): number | undefined => {
+            if (!gridClass) return undefined;
+            const match = gridClass.match(/(?:lg:)?col-span-(\d+)/);
+            return match ? Math.max(1, Math.min(12, Number(match[1]))) : undefined;
+        };
+
+        const defaultSizeForComponent = (component: ChartComponentType): { w: number; h: number } => {
+            switch (component) {
+                case 'KpiCard':
+                    return { w: 3, h: 2 };
+                case 'DataTable':
+                case 'Matrix':
+                case 'ChoroplethMap':
+                case 'BubbleMap':
+                    return { w: 12, h: 6 };
+                case 'LineChart':
+                    return { w: 12, h: 4 };
+                case 'ComboChart':
+                case 'WaterfallChart':
+                case 'FunnelChart':
+                case 'TreemapChart':
+                case 'BarChart':
+                case 'AreaChart':
+                case 'PieChart':
+                case 'ScatterChart':
+                case 'HeatmapChart':
+                default:
+                    return { w: 6, h: 4 };
+            }
+        };
+
+        // Flow layout packer to avoid overlaps. Packs left-to-right, top-to-bottom.
+        const COLS = 12;
+        let cursorX = 0;
+        let cursorY = 0;
+        let currentRowHeight = 0; // in grid rows
+
+        const packedLayout = dashboardConfig.widgets.map((w) => {
+            const inferredSpan = spanFromGridClass(w.gridClass);
+            const defaults = defaultSizeForComponent(w.component);
+
+            const itemW = w.layout?.w ?? inferredSpan ?? defaults.w;
+            const itemH = w.layout?.h ?? defaults.h;
+
+            // If item does not fit current row, wrap to next row
+            if (cursorX + itemW > COLS) {
+                cursorX = 0;
+                cursorY += currentRowHeight;
+                currentRowHeight = 0;
+            }
+
+            const x = w.layout?.x ?? cursorX;
+            const y = w.layout?.y ?? cursorY;
+
+            // Advance cursor
+            cursorX = (w.layout?.x !== undefined ? w.layout.x + itemW : cursorX + itemW) % (COLS + 1);
+            if (cursorX > COLS) {
+                // Safety wrap (should not happen with logic above)
+                cursorX = 0;
+                cursorY += currentRowHeight;
+                currentRowHeight = 0;
+            }
+            currentRowHeight = Math.max(currentRowHeight, itemH);
+
+            return { i: w.id, x, y, w: itemW, h: itemH } as Layout;
+        });
+
+        setLayout(packedLayout);
     }, [dashboardConfig]);
 
     const allRegions = useMemo(() => [...new Set(rawSalesData.map(d => d.regiao))].sort(), [rawSalesData]);
@@ -487,6 +548,8 @@ const Dashboard: React.FC = () => {
             layout={layout}
             cols={12}
             rowHeight={30}
+            compactType="vertical"
+            preventCollision={false}
             isDraggable={isEditing}
             isResizable={isEditing}
             isDroppable={isEditing}
