@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label } from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 
@@ -8,7 +8,10 @@ interface BarChartProps {
     data: any[];
     title: string;
     config: DynamicChartConfig;
-    colors?: string[];
+    /** Optional color palette for the bars */
+    colorPalette?: string[];
+    /** Overrides stacking behaviour defined in config */
+    stackType?: 'none' | 'stacked' | '100%stacked';
 }
 
 const CustomTooltip = ({ active, payload, label, is100Percent }: any) => {
@@ -35,14 +38,15 @@ const CustomTooltip = ({ active, payload, label, is100Percent }: any) => {
     return null;
 };
 
-const BarChart: React.FC<BarChartProps> = ({ data, title, config, colors }) => {
+const BarChart: React.FC<BarChartProps> = ({ data, title, config, colorPalette, stackType }) => {
     const {
         category,
         value,
         legend,
         layout = 'horizontal',
-        stackType = 'none',
     } = config;
+
+    const effectiveStackType = stackType ?? config.stackType ?? 'none';
 
     const barDataKeys = useMemo(() => {
         if (!legend) {
@@ -55,9 +59,42 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, config, colors }) => {
             .map(key => ({ key, name: key }));
     }, [data, legend, category.dataKey, value.dataKey, value.label]);
 
+    const chartColors = colorPalette ?? barColors;
 
-    const isStacked = stackType === 'stacked' || stackType === '100%stacked';
-    const is100Percent = stackType === '100%stacked';
+    const initialSeries = useMemo(() => {
+        return barDataKeys.map((bar, index) => ({
+            ...bar,
+            color: chartColors[index % chartColors.length],
+        }));
+    }, [barDataKeys, chartColors]);
+
+    const [seriesOrder, setSeriesOrder] = useState(initialSeries);
+
+    useEffect(() => {
+        setSeriesOrder(initialSeries);
+    }, [initialSeries]);
+
+    const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+    const handleDragStart = (index: number) => {
+        setDragIndex(index);
+    };
+
+    const handleDrop = (index: number) => {
+        if (dragIndex === null) return;
+        setSeriesOrder(prev => {
+            const updated = [...prev];
+            const [removed] = updated.splice(dragIndex, 1);
+            updated.splice(index, 0, removed);
+            return updated;
+        });
+        setDragIndex(null);
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLLIElement>) => e.preventDefault();
+
+    const isStacked = effectiveStackType === 'stacked' || effectiveStackType === '100%stacked';
+    const is100Percent = effectiveStackType === '100%stacked';
     const isVertical = layout === 'vertical';
 
     const percentFormatter = (tick: number) => `${(tick * 100).toFixed(0)}%`;
@@ -74,8 +111,6 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, config, colors }) => {
     };
     
     const barRadius: [number, number, number, number] = isStacked ? [0, 0, 0, 0] : (isVertical ? [4, 4, 0, 0] : [0, 4, 4, 0]);
-
-    const chartColors = colors ?? barColors;
 
     const xAxisProps = isVertical
         ? { // Vertical layout: X-axis is the category axis.
@@ -136,12 +171,12 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, config, colors }) => {
                         <Tooltip content={<CustomTooltip is100Percent={is100Percent} />} cursor={{ fill: 'rgba(229, 231, 235, 0.5)' }} />
                         <Legend wrapperStyle={{fontSize: "12px", paddingTop: "20px"}} />
 
-                        {barDataKeys.map((bar, index) => (
+                        {seriesOrder.map((bar) => (
                             <Bar
-                                key={index}
+                                key={bar.key}
                                 dataKey={bar.key}
                                 name={bar.name}
-                                fill={chartColors[index % chartColors.length]}
+                                fill={bar.color}
                                 stackId={isStacked ? 'a' : undefined}
                                 radius={barRadius}
                             />
@@ -149,6 +184,23 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, config, colors }) => {
                     </RechartsBarChart>
                 </ResponsiveContainer>
             </div>
+            {seriesOrder.length > 1 && (
+                <ul className="flex gap-2 mt-2 justify-center" data-testid="series-order">
+                    {seriesOrder.map((bar, index) => (
+                        <li
+                            key={bar.key}
+                            draggable
+                            onDragStart={() => handleDragStart(index)}
+                            onDragOver={handleDragOver}
+                            onDrop={() => handleDrop(index)}
+                            data-testid="series-item"
+                            className="cursor-move bg-gray-100 px-2 py-1 rounded"
+                        >
+                            {bar.name}
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 };
