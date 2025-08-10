@@ -1,12 +1,13 @@
 
-import React from 'react';
-import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useState } from 'react';
+import { PieChart as RechartsPieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, Sector } from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 
 interface PieChartProps {
     data: { name: string; value: number }[];
     title: string;
     config: DynamicChartConfig;
+    showLabels?: boolean;
 }
 
 const COLORS = ['#00A3E0', '#005A9C', '#64B5F6', '#2196F3', '#FFCA28', '#FF7043', '#4CAF50', '#F44336'];
@@ -26,11 +27,42 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
     );
 };
 
+const renderActiveShape = ({
+    cx,
+    cy,
+    innerRadius,
+    outerRadius,
+    startAngle,
+    endAngle,
+    fill,
+}: any) => (
+    <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius + 5}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+    />
+);
+
 const PieChart: React.FC<PieChartProps> = ({
     data,
     title,
-    config
+    config,
+    showLabels = false,
 }) => {
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+    const onPieEnter = (_: any, index: number) => {
+        setActiveIndex(index);
+    };
+
+    const onPieLeave = () => {
+        setActiveIndex(null);
+    };
+
     return (
         <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
@@ -48,7 +80,11 @@ const PieChart: React.FC<PieChartProps> = ({
                             fill="#8884d8"
                             paddingAngle={2}
                             labelLine={false}
-                            label={renderCustomizedLabel}
+                            label={showLabels ? renderCustomizedLabel : undefined}
+                            activeIndex={activeIndex ?? undefined}
+                            activeShape={renderActiveShape}
+                            onMouseEnter={onPieEnter}
+                            onMouseLeave={onPieLeave}
                         >
                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke={COLORS[index % COLORS.length]} />
