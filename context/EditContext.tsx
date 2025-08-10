@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useContext } from 'react';
-import useEditable from '@/hooks/useEditable';
+import useEditable from '../hooks/useEditable.ts';
 
 interface EditContextValue {
   isEditing: boolean;
