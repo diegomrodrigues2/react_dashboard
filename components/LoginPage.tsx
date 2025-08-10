@@ -1,8 +1,60 @@
 import React, { useState } from 'react';
+import { CSS } from '@dnd-kit/utilities';
+import { useDndMonitor } from '@dnd-kit/core';
+import { SortableList, useSortableItem } from '../utils/dnd';
 
 interface LoginPageProps {
   onLoginAttempt: (usernameOrEmail: string, passwordAttempt: string) => boolean;
 }
+
+const DraggableCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortableItem('login-card');
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  useDndMonitor({
+    onDragEnd(event) {
+      if (event.active.id === 'login-card') {
+        setPosition((prev) => ({
+          x: prev.x + event.delta.x,
+          y: prev.y + event.delta.y,
+        }));
+      }
+    },
+  });
+
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'test') {
+      const handler = (e: CustomEvent<{ x: number; y: number }>) => {
+        setPosition(e.detail);
+      };
+      window.addEventListener('test-drag', handler as EventListener);
+      return () => window.removeEventListener('test-drag', handler as EventListener);
+    }
+  }, []);
+
+  const style = {
+    transform: CSS.Translate.toString({
+      x: (transform?.x || 0) + position.x,
+      y: (transform?.y || 0) + position.y,
+    }),
+    transition,
+    touchAction: 'none' as const,
+  };
+
+  return (
+    <div
+      data-testid="login-card"
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="cursor-move"
+    >
+      {children}
+    </div>
+  );
+};
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
   const [username, setUsername] = useState<string>('');
@@ -29,15 +81,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white p-8 sm:p-10 rounded-xl shadow-2xl w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-2 sm:p-4">
+      <SortableList items={[{ id: 'login-card' }]}>
+        <DraggableCard>
+          <div className="bg-white p-6 sm:p-10 rounded-xl shadow-2xl w-full max-w-xs sm:max-w-md">
         <h1 className="text-3xl sm:text-4xl font-bold text-center text-[#002D5A] mb-8 sm:mb-10">
           StoneX BRules
         </h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label 
-              htmlFor="username" 
+            <label
+              htmlFor="username"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Usuário
@@ -50,6 +104,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'error-message' : undefined}
               className="mt-1 block w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#00A3E0] focus:border-[#00A3E0] sm:text-sm placeholder-gray-400"
               placeholder="admin"
             />
@@ -70,6 +126,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'error-message' : undefined}
               className="mt-1 block w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#00A3E0] focus:border-[#00A3E0] sm:text-sm placeholder-gray-400"
               placeholder="••••••••"
             />
@@ -91,7 +149,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 text-center">{error}</p>
+            <p
+              id="error-message"
+              role="alert"
+              aria-live="assertive"
+              className="text-sm text-red-600 text-center"
+            >
+              {error}
+            </p>
           )}
 
           <div>
@@ -103,7 +168,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
             </button>
           </div>
         </form>
-      </div>
+          </div>
+        </DraggableCard>
+      </SortableList>
     </div>
   );
 };

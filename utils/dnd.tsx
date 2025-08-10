@@ -1,5 +1,20 @@
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import { restrictToWindowEdges } from '@dnd-kit/modifiers';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
 import React, { createContext, useContext, useState } from 'react';
 
 interface ItemWithId {
@@ -21,7 +36,10 @@ export function SortableList<T extends ItemWithId>({
   children: React.ReactNode;
 }) {
   const [items, setItems] = useState<T[]>(initialItems);
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -36,7 +54,12 @@ export function SortableList<T extends ItemWithId>({
 
   return (
     <SortableListContext.Provider value={{ items, setItems }}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+        modifiers={[restrictToWindowEdges]}
+      >
         <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           {children}
         </SortableContext>
