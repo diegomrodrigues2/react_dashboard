@@ -1,6 +1,7 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { AreaChart as RechartsAreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label } from 'recharts';
+import useEditable from '../../hooks/useEditable.ts';
 import { DynamicChartConfig } from '../../types.ts';
 
 const areaColors = ['#00A3E0', '#D9262E', '#64B5F6', '#FFCA28', '#4CAF50', '#FF7043', '#2196F3', '#005A9C'];
@@ -49,6 +50,9 @@ const CustomTooltip = ({ active, payload, label, config }: any) => {
 const AreaChart: React.FC<AreaChartProps> = ({ data, title, config, gradientColors }) => {
   const { category, value, legend, stackType = 'none' } = config;
 
+  const [customGradient, setCustomGradient] = useState<[string, string] | null>(gradientColors ?? null);
+  const { isEditing, startEdit, stopEdit } = useEditable(false);
+
   const areaDataKeys = useMemo(() => {
     if (!legend && value) {
       return [{ key: value.dataKey, name: value.label || String(value.dataKey) }];
@@ -59,33 +63,109 @@ const AreaChart: React.FC<AreaChartProps> = ({ data, title, config, gradientColo
       .filter(key => key !== category.dataKey)
       .map(key => ({ key, name: key }));
   }, [data, legend, category, value]);
-  
+
+  // Assign a stable color for each series and allow reordering
+  const coloredKeys = useMemo(() => areaDataKeys.map((area, index) => ({
+    ...area,
+    color: areaColors[index % areaColors.length],
+  })), [areaDataKeys]);
+
+  const [legendItems, setLegendItems] = useState(coloredKeys);
+
+  useEffect(() => {
+    setLegendItems(coloredKeys);
+  }, [coloredKeys]);
+
+  const handleDragStart = (from: number) => (e: React.DragEvent<HTMLLIElement>) => {
+    e.dataTransfer.setData('text/plain', String(from));
+  };
+
+  const handleDrop = (to: number) => (e: React.DragEvent<HTMLLIElement>) => {
+    const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (from === to || Number.isNaN(from)) return;
+    const updated = [...legendItems];
+    const [moved] = updated.splice(from, 1);
+    updated.splice(to, 0, moved);
+    setLegendItems(updated);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const renderLegend = () => (
+    <ul className="flex flex-wrap" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+      {legendItems.map((item, index) => (
+        <li
+          key={item.key}
+          className="flex items-center mr-4 cursor-move"
+          draggable
+          onDragStart={handleDragStart(index)}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop(index)}
+          data-testid="legend-item"
+        >
+          <span className="mr-1">☰</span>
+          <svg width="10" height="10" viewBox="0 0 32 32" className="mr-1">
+            <rect width="32" height="32" fill={item.color} />
+          </svg>
+          <span>{item.name}</span>
+        </li>
+      ))}
+    </ul>
+  );
+
   const isStacked = stackType === 'stacked' || stackType === '100%stacked';
   const is100Percent = stackType === '100%stacked';
-  
+
   const percentFormatter = (tick: number) => `${(tick * 100).toFixed(0)}%`;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">{title}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-800 text-center flex-1">{title}</h3>
+        {customGradient && (
+          isEditing ? (
+            <div className="flex items-center gap-2" data-testid="gradient-editor">
+              <input
+                type="color"
+                aria-label="Start color"
+                value={customGradient[0]}
+                onChange={(e) => setCustomGradient([e.target.value, customGradient[1]])}
+                data-testid="gradient-start-input"
+              />
+              <input
+                type="color"
+                aria-label="End color"
+                value={customGradient[1]}
+                onChange={(e) => setCustomGradient([customGradient[0], e.target.value])}
+                data-testid="gradient-end-input"
+              />
+              <button onClick={stopEdit} className="text-xs px-2 py-1 border rounded">Done</button>
+            </div>
+          ) : (
+            <button onClick={startEdit} className="text-xs px-2 py-1 border rounded" data-testid="edit-gradient-btn">Edit Colors</button>
+          )
+        )}
+      </div>
       <div className="flex-grow">
         <ResponsiveContainer width="100%" height="100%">
-            <RechartsAreaChart 
-              data={data} 
+            <RechartsAreaChart
+              data={data}
               margin={{ top: 5, right: 30, left: 20, bottom: 20 }}
               stackOffset={is100Percent ? 'expand' : undefined}
             >
               <defs>
-                {gradientColors ? (
+                {customGradient ? (
                   <linearGradient id="customGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={gradientColors[0]} stopOpacity={isStacked ? 0.8 : 0.6} />
-                    <stop offset="95%" stopColor={gradientColors[1] ?? gradientColors[0]} stopOpacity={isStacked ? 0.2 : 0} />
+                    <stop offset="5%" stopColor={customGradient[0]} stopOpacity={isStacked ? 0.8 : 0.6} />
+                    <stop offset="95%" stopColor={customGradient[1] ?? customGradient[0]} stopOpacity={isStacked ? 0.2 : 0} />
                   </linearGradient>
                 ) : (
-                  areaDataKeys.map((area, index) => (
+                  legendItems.map((area) => (
                     <linearGradient key={`color-${area.key}`} id={`color-${area.key}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={areaColors[index % areaColors.length]} stopOpacity={isStacked ? 0.8 : 0.6} />
-                      <stop offset="95%" stopColor={areaColors[index % areaColors.length]} stopOpacity={isStacked ? 0.2 : 0} />
+                      <stop offset="5%" stopColor={area.color} stopOpacity={isStacked ? 0.8 : 0.6} />
+                      <stop offset="95%" stopColor={area.color} stopOpacity={isStacked ? 0.2 : 0} />
                     </linearGradient>
                   ))
                 )}
@@ -94,9 +174,9 @@ const AreaChart: React.FC<AreaChartProps> = ({ data, title, config, gradientColo
               <XAxis dataKey={category?.dataKey} stroke="#6B7280" tick={{ fontSize: 12 }}>
                  <Label value={category?.label} offset={-15} position="insideBottom" fill="#6B7280" fontSize={14} />
               </XAxis>
-              <YAxis 
-                stroke="#6B7280" 
-                tickFormatter={is100Percent ? percentFormatter : currencyFormatter} 
+              <YAxis
+                stroke="#6B7280"
+                tickFormatter={is100Percent ? percentFormatter : currencyFormatter}
                 tick={{ fontSize: 12 }}
                 domain={is100Percent ? [0, 1] : undefined}
               >
@@ -110,17 +190,17 @@ const AreaChart: React.FC<AreaChartProps> = ({ data, title, config, gradientColo
                       borderRadius: '0.5rem',
                   }}
               />
-              <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}}/>
-              {areaDataKeys.map((area, index) => (
+              <Legend content={renderLegend} />
+              {legendItems.map((area) => (
                   <Area
                       key={area.key}
                       type="monotone"
                       dataKey={area.key}
                       name={area.name}
-                      stroke={areaColors[index % areaColors.length]}
+                      stroke={area.color}
                       strokeWidth={2}
                       fillOpacity={1}
-                      fill={gradientColors ? 'url(#customGradient)' : `url(#color-${area.key})`}
+                      fill={customGradient ? 'url(#customGradient)' : `url(#color-${area.key})`}
                       stackId={isStacked ? '1' : undefined}
                   />
               ))}
