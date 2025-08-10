@@ -10,10 +10,9 @@ class ResizeObserver {
   disconnect() {}
 }
 
-// @ts-ignore
-global.ResizeObserver = ResizeObserver;
+(globalThis as any).ResizeObserver = ResizeObserver;
 
-const config: DynamicChartConfig = {
+const config: DynamicChartConfig<{ name: string; value: number }> = {
   sourceDataKey: 'funnelData',
   chartType: 'Funnel',
   category: { dataKey: 'name' },

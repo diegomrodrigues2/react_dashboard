@@ -41,7 +41,7 @@ exports[`AreaChart > snapshot renders 1`] = `
                 id="recharts1-clip"
               >
                 <rect
-                  height="245"
+                  height="0"
                   width="290"
                   x="80"
                   y="5"
@@ -87,79 +87,6 @@ exports[`AreaChart > snapshot renders 1`] = `
               </lineargradient>
             </defs>
             <g
-              class="recharts-cartesian-grid"
-            >
-              <g
-                class="recharts-cartesian-grid-horizontal"
-              >
-                <line
-                  fill="none"
-                  height="245"
-                  stroke="#ccc"
-                  stroke-dasharray="3 3"
-                  width="290"
-                  x="80"
-                  x1="80"
-                  x2="370"
-                  y="5"
-                  y1="250"
-                  y2="250"
-                />
-                <line
-                  fill="none"
-                  height="245"
-                  stroke="#ccc"
-                  stroke-dasharray="3 3"
-                  width="290"
-                  x="80"
-                  x1="80"
-                  x2="370"
-                  y="5"
-                  y1="188.75"
-                  y2="188.75"
-                />
-                <line
-                  fill="none"
-                  height="245"
-                  stroke="#ccc"
-                  stroke-dasharray="3 3"
-                  width="290"
-                  x="80"
-                  x1="80"
-                  x2="370"
-                  y="5"
-                  y1="127.5"
-                  y2="127.5"
-                />
-                <line
-                  fill="none"
-                  height="245"
-                  stroke="#ccc"
-                  stroke-dasharray="3 3"
-                  width="290"
-                  x="80"
-                  x1="80"
-                  x2="370"
-                  y="5"
-                  y1="66.25"
-                  y2="66.25"
-                />
-                <line
-                  fill="none"
-                  height="245"
-                  stroke="#ccc"
-                  stroke-dasharray="3 3"
-                  width="290"
-                  x="80"
-                  x1="80"
-                  x2="370"
-                  y="5"
-                  y1="5"
-                  y2="5"
-                />
-              </g>
-            </g>
-            <g
               class="recharts-layer recharts-cartesian-axis recharts-xAxis xAxis"
             >
               <line
@@ -172,50 +99,13 @@ exports[`AreaChart > snapshot renders 1`] = `
                 x="80"
                 x1="80"
                 x2="370"
-                y="250"
-                y1="250"
-                y2="250"
+                y="-50"
+                y1="-50"
+                y2="-50"
               />
               <g
                 class="recharts-cartesian-axis-ticks"
               >
-                <g
-                  class="recharts-layer recharts-cartesian-axis-tick"
-                >
-                  <line
-                    class="recharts-cartesian-axis-tick-line"
-                    fill="none"
-                    height="30"
-                    orientation="bottom"
-                    stroke="#6B7280"
-                    width="290"
-                    x="80"
-                    x1="80"
-                    x2="80"
-                    y="250"
-                    y1="256"
-                    y2="250"
-                  />
-                  <text
-                    class="recharts-text recharts-cartesian-axis-tick-value"
-                    fill="#6B7280"
-                    font-size="12"
-                    height="30"
-                    orientation="bottom"
-                    stroke="none"
-                    text-anchor="middle"
-                    width="290"
-                    x="80"
-                    y="258"
-                  >
-                    <tspan
-                      dy="0.71em"
-                      x="80"
-                    >
-                      Jan
-                    </tspan>
-                  </text>
-                </g>
                 <g
                   class="recharts-layer recharts-cartesian-axis-tick"
                 >
@@ -229,9 +119,9 @@ exports[`AreaChart > snapshot renders 1`] = `
                     x="80"
                     x1="370"
                     x2="370"
-                    y="250"
-                    y1="256"
-                    y2="250"
+                    y="-50"
+                    y1="-44"
+                    y2="-50"
                   />
                   <text
                     class="recharts-text recharts-cartesian-axis-tick-value"
@@ -242,12 +132,12 @@ exports[`AreaChart > snapshot renders 1`] = `
                     stroke="none"
                     text-anchor="middle"
                     width="290"
-                    x="370"
-                    y="258"
+                    x="200"
+                    y="-42"
                   >
                     <tspan
                       dy="0.71em"
-                      x="370"
+                      x="200"
                     >
                       Feb
                     </tspan>
@@ -261,238 +151,13 @@ exports[`AreaChart > snapshot renders 1`] = `
                 offset="-15"
                 text-anchor="middle"
                 x="225"
-                y="295"
+                y="-5"
               >
                 <tspan
                   dy="0em"
                   x="225"
                 >
                   Month
-                </tspan>
-              </text>
-            </g>
-            <g
-              class="recharts-layer recharts-cartesian-axis recharts-yAxis yAxis"
-            >
-              <line
-                class="recharts-cartesian-axis-line"
-                fill="none"
-                height="245"
-                orientation="left"
-                stroke="#6B7280"
-                width="60"
-                x="20"
-                x1="80"
-                x2="80"
-                y="5"
-                y1="5"
-                y2="250"
-              />
-              <g
-                class="recharts-cartesian-axis-ticks"
-              >
-                <g
-                  class="recharts-layer recharts-cartesian-axis-tick"
-                >
-                  <line
-                    class="recharts-cartesian-axis-tick-line"
-                    fill="none"
-                    height="245"
-                    orientation="left"
-                    stroke="#6B7280"
-                    width="60"
-                    x="20"
-                    x1="74"
-                    x2="80"
-                    y="5"
-                    y1="250"
-                    y2="250"
-                  />
-                  <text
-                    class="recharts-text recharts-cartesian-axis-tick-value"
-                    fill="#6B7280"
-                    font-size="12"
-                    height="245"
-                    orientation="left"
-                    stroke="none"
-                    text-anchor="end"
-                    width="60"
-                    x="72"
-                    y="250"
-                  >
-                    <tspan
-                      dy="0.355em"
-                      x="72"
-                    >
-                      R$ 0
-                    </tspan>
-                  </text>
-                </g>
-                <g
-                  class="recharts-layer recharts-cartesian-axis-tick"
-                >
-                  <line
-                    class="recharts-cartesian-axis-tick-line"
-                    fill="none"
-                    height="245"
-                    orientation="left"
-                    stroke="#6B7280"
-                    width="60"
-                    x="20"
-                    x1="74"
-                    x2="80"
-                    y="5"
-                    y1="188.75"
-                    y2="188.75"
-                  />
-                  <text
-                    class="recharts-text recharts-cartesian-axis-tick-value"
-                    fill="#6B7280"
-                    font-size="12"
-                    height="245"
-                    orientation="left"
-                    stroke="none"
-                    text-anchor="end"
-                    width="60"
-                    x="72"
-                    y="188.75"
-                  >
-                    <tspan
-                      dy="0.355em"
-                      x="72"
-                    >
-                      R$ 65
-                    </tspan>
-                  </text>
-                </g>
-                <g
-                  class="recharts-layer recharts-cartesian-axis-tick"
-                >
-                  <line
-                    class="recharts-cartesian-axis-tick-line"
-                    fill="none"
-                    height="245"
-                    orientation="left"
-                    stroke="#6B7280"
-                    width="60"
-                    x="20"
-                    x1="74"
-                    x2="80"
-                    y="5"
-                    y1="127.5"
-                    y2="127.5"
-                  />
-                  <text
-                    class="recharts-text recharts-cartesian-axis-tick-value"
-                    fill="#6B7280"
-                    font-size="12"
-                    height="245"
-                    orientation="left"
-                    stroke="none"
-                    text-anchor="end"
-                    width="60"
-                    x="72"
-                    y="127.5"
-                  >
-                    <tspan
-                      dy="0.355em"
-                      x="72"
-                    >
-                      R$ 130
-                    </tspan>
-                  </text>
-                </g>
-                <g
-                  class="recharts-layer recharts-cartesian-axis-tick"
-                >
-                  <line
-                    class="recharts-cartesian-axis-tick-line"
-                    fill="none"
-                    height="245"
-                    orientation="left"
-                    stroke="#6B7280"
-                    width="60"
-                    x="20"
-                    x1="74"
-                    x2="80"
-                    y="5"
-                    y1="66.25"
-                    y2="66.25"
-                  />
-                  <text
-                    class="recharts-text recharts-cartesian-axis-tick-value"
-                    fill="#6B7280"
-                    font-size="12"
-                    height="245"
-                    orientation="left"
-                    stroke="none"
-                    text-anchor="end"
-                    width="60"
-                    x="72"
-                    y="66.25"
-                  >
-                    <tspan
-                      dy="0.355em"
-                      x="72"
-                    >
-                      R$ 195
-                    </tspan>
-                  </text>
-                </g>
-                <g
-                  class="recharts-layer recharts-cartesian-axis-tick"
-                >
-                  <line
-                    class="recharts-cartesian-axis-tick-line"
-                    fill="none"
-                    height="245"
-                    orientation="left"
-                    stroke="#6B7280"
-                    width="60"
-                    x="20"
-                    x1="74"
-                    x2="80"
-                    y="5"
-                    y1="5"
-                    y2="5"
-                  />
-                  <text
-                    class="recharts-text recharts-cartesian-axis-tick-value"
-                    fill="#6B7280"
-                    font-size="12"
-                    height="245"
-                    orientation="left"
-                    stroke="none"
-                    text-anchor="end"
-                    width="60"
-                    x="72"
-                    y="5"
-                  >
-                    <tspan
-                      dy="0.355em"
-                      x="72"
-                    >
-                      R$ 260
-                    </tspan>
-                  </text>
-                </g>
-              </g>
-              <text
-                class="recharts-text recharts-label"
-                fill="#6B7280"
-                font-size="14"
-                offset="-5"
-                style="text-anchor: middle;"
-                text-anchor="start"
-                transform="rotate(-90, 15, 127.5)"
-                x="15"
-                y="127.5"
-              >
-                <tspan
-                  dy="0.355em"
-                  x="15"
-                >
-                  Value
                 </tspan>
               </text>
             </g>
@@ -507,7 +172,7 @@ exports[`AreaChart > snapshot renders 1`] = `
                     id="animationClipPath-recharts-area-4"
                   >
                     <rect
-                      height="252"
+                      height="7"
                       width="0"
                       x="80"
                       y="0"
@@ -523,10 +188,10 @@ exports[`AreaChart > snapshot renders 1`] = `
                   >
                     <path
                       class="recharts-curve recharts-area-area"
-                      d="M80,155.7692307692308L370,108.65384615384617L370,250L80,250Z"
+                      d="M80,5L370,5L370,5L80,5Z"
                       fill="url(#color-apples)"
                       fill-opacity="1"
-                      height="245"
+                      height="0"
                       name="apples"
                       stroke="none"
                       stroke-width="2"
@@ -534,10 +199,10 @@ exports[`AreaChart > snapshot renders 1`] = `
                     />
                     <path
                       class="recharts-curve recharts-area-curve"
-                      d="M80,155.7692307692308L370,108.65384615384617"
+                      d="M80,5L370,5"
                       fill="none"
                       fill-opacity="1"
-                      height="245"
+                      height="0"
                       name="apples"
                       stroke="#00A3E0"
                       stroke-width="2"
@@ -558,7 +223,7 @@ exports[`AreaChart > snapshot renders 1`] = `
                     id="animationClipPath-recharts-area-5"
                   >
                     <rect
-                      height="252"
+                      height="7"
                       width="0"
                       x="80"
                       y="0"
@@ -574,10 +239,10 @@ exports[`AreaChart > snapshot renders 1`] = `
                   >
                     <path
                       class="recharts-curve recharts-area-area"
-                      d="M80,61.538461538461526L370,14.423076923076916L370,250L80,250Z"
+                      d="M80,5L370,5L370,5L80,5Z"
                       fill="url(#color-bananas)"
                       fill-opacity="1"
-                      height="245"
+                      height="0"
                       name="bananas"
                       stroke="none"
                       stroke-width="2"
@@ -585,10 +250,10 @@ exports[`AreaChart > snapshot renders 1`] = `
                     />
                     <path
                       class="recharts-curve recharts-area-curve"
-                      d="M80,61.538461538461526L370,14.423076923076916"
+                      d="M80,5L370,5"
                       fill="none"
                       fill-opacity="1"
-                      height="245"
+                      height="0"
                       name="bananas"
                       stroke="#D9262E"
                       stroke-width="2"
@@ -662,8 +327,8 @@ exports[`AreaChart > snapshot renders 1`] = `
             </ul>
           </div>
           <div
-            class="recharts-tooltip-wrapper"
-            style="visibility: hidden; pointer-events: none; position: absolute; top: 0px; left: 0px;"
+            class="recharts-tooltip-wrapper recharts-tooltip-wrapper-right recharts-tooltip-wrapper-bottom"
+            style="visibility: hidden; pointer-events: none; position: absolute; top: 0px; left: 0px; transform: translate(80px, 5px);"
             tabindex="-1"
           />
         </div>

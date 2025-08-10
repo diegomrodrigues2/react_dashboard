@@ -13,7 +13,7 @@ const sampleData: WFPoint[] = [
   { category: 'C', value: 30 },
 ];
 
-const config: DynamicChartConfig = {
+const config: DynamicChartConfig<WFPoint> = {
   sourceDataKey: 'waterfallData',
   chartType: 'Waterfall',
   value: { dataKey: 'value', label: 'Valor' }
@@ -21,8 +21,7 @@ const config: DynamicChartConfig = {
 
 beforeAll(() => {
   // jsdom doesn't implement ResizeObserver which is required by Recharts' ResponsiveContainer
-  // @ts-ignore
-  global.ResizeObserver = class {
+  (globalThis as any).ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
