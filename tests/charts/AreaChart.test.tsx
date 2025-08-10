@@ -17,6 +17,35 @@ describe('AreaChart', () => {
       unobserve() {}
       disconnect() {}
     };
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      value: 400,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      value: 300,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      value: 400,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      value: 300,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
+      configurable: true,
+      value: function () {
+        return {
+          width: parseInt((this as HTMLElement).style.width || '400', 10),
+          height: parseInt((this as HTMLElement).style.height || '300', 10),
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+        } as DOMRect;
+      },
+    });
   });
   const data = [
     { month: 'Jan', apples: 100, bananas: 200 },

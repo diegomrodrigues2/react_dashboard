@@ -29,8 +29,7 @@ class ResizeObserver {
   unobserve() {}
   disconnect() {}
 }
-// @ts-ignore
-global.ResizeObserver = ResizeObserver;
+(globalThis as any).ResizeObserver = ResizeObserver;
 
 // Provide dimensions for elements used by Recharts
 Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
@@ -47,12 +46,14 @@ Object.defineProperty(HTMLElement.prototype, 'getBoundingClientRect', {
   },
 });
 
-const data = [
+type BarData = { category: string; s1: number; s2: number; legend?: string };
+
+const data: BarData[] = [
   { category: 'A', s1: 10, s2: 20 },
   { category: 'B', s1: 15, s2: 25 }
 ];
 
-const baseConfig: DynamicChartConfig = {
+const baseConfig: DynamicChartConfig<BarData> = {
   sourceDataKey: 'detailedData',
   chartType: 'Bar',
   layout: 'vertical',

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FunnelChart as RechartsFunnelChart, Funnel, Tooltip, LabelList, ResponsiveContainer } from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 
-interface FunnelChartProps<T extends Record<string, unknown>> {
+interface FunnelChartProps<T extends Record<string, number | string>> {
     data: T[];
     title: string;
     config: DynamicChartConfig<T>;
@@ -35,7 +35,7 @@ const CustomTooltip = ({ active, payload, data }: { active?: boolean; payload?: 
     return null;
 };
 
-const FunnelChart = <T extends Record<string, unknown>>({ data, title, config }: FunnelChartProps<T>) => {
+const FunnelChart = <T extends Record<string, number | string>>({ data, title, config }: FunnelChartProps<T>) => {
     const { category, value } = config;
 
     const initialData = data.map((item, index) => ({
