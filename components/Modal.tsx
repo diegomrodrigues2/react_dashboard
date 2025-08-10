@@ -59,24 +59,21 @@ const Modal: React.FC<ModalProps> = ({
     if (isOpen) {
       if (initialData) {
         // Ensure numbers are treated as numbers for number inputs, dates as YYYY-MM-DD strings
-        const processedInitialData: Partial<DataItem> = {};
+        const processedInitialData: Partial<Record<keyof DataItem, unknown>> = {};
         fields.forEach(field => {
-          // @ts-ignore
-          const value = initialData[field.name];
-           // @ts-ignore
-          processedInitialData[field.name] = value;
+          const key = field.name as keyof DataItem;
+          processedInitialData[key] = initialData[key];
         });
-         // @ts-ignore
-        setFormData(processedInitialData);
+        setFormData(processedInitialData as Partial<DataItem>);
       } else {
-        const emptyForm: Partial<DataItem> = {};
+        const emptyForm: Partial<Record<keyof DataItem, unknown>> = {};
         fields.forEach(field => {
-           // @ts-ignore
-          emptyForm[field.name] = field.type === 'select' && field.options && field.options.length > 0 
-            ? field.options[0] 
-            : field.type === 'number' ? '' : ''; // Default for number can be empty or 0
+          const key = field.name as keyof DataItem;
+          emptyForm[key] = field.type === 'select' && field.options && field.options.length > 0
+            ? field.options[0]
+            : field.type === 'number' ? '' : '';
         });
-        setFormData(emptyForm);
+        setFormData(emptyForm as Partial<DataItem>);
       }
     }
   }, [isOpen, initialData, fields]);
@@ -103,14 +100,13 @@ const Modal: React.FC<ModalProps> = ({
     const newErrors: Record<string, string> = {};
 
     fields.forEach(field => {
-      // @ts-ignore
-      const value = formData[field.name];
+      const key = field.name as keyof DataItem;
+      const value = formData[key];
       if (field.required && (value === '' || value === undefined || value === null)) {
         newErrors[field.name] = 'Campo obrigatório';
       }
       if (field.type === 'number' && typeof value === 'string' && value.trim() !== '') {
-        // @ts-ignore
-        submittedData[field.name] = parseFloat(value);
+        (submittedData as Record<keyof DataItem, unknown>)[key] = parseFloat(value);
       }
     });
 
@@ -133,18 +129,17 @@ const Modal: React.FC<ModalProps> = ({
 
   // Expose for tests
   if (process.env.NODE_ENV === 'test') {
-    // @ts-ignore
-    (window as any).__modalDragEnd = handleDragEnd;
+    (window as unknown as Record<string, unknown>).__modalDragEnd = handleDragEnd;
   }
 
   if (!isVisible) return null;
 
   const renderInput = (field: FieldConfig) => {
+    const key = field.name as keyof DataItem;
     const commonProps = {
       id: field.name,
       name: field.name,
-      // @ts-ignore
-      value: formData[field.name] ?? '',
+      value: formData[key] ?? '',
       onChange: handleChange,
       required: field.required,
       className: `mt-1 block w-full px-3 py-2 bg-white text-gray-900 border ${errors[field.name] ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-[#00A3E0] focus:border-[#00A3E0] sm:text-sm placeholder-gray-400`,
@@ -154,7 +149,7 @@ const Modal: React.FC<ModalProps> = ({
 
     if (field.type === 'select' && field.options) {
       return (
-        <select {...commonProps} value={formData[field.name as keyof DataItem] ?? (field.options[0] || '')}>
+        <select {...commonProps} value={formData[key] ?? (field.options[0] || '')}>
           {field.options.map(option => (
             <option key={option} value={option}>{option}</option>
           ))}

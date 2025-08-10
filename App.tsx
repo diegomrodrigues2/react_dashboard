@@ -96,10 +96,10 @@ const App: React.FC = () => {
 
   const handleAddItem = useCallback(() => {
     if (currentMenuItem && currentMenuItem.fields && currentUser && (currentUser.role === 'admin' || currentUser.role === 'editor')) {
-      const newItemTemplate: Partial<DataItem> = {};
+      const newItemTemplate: Partial<Record<keyof DataItem, unknown>> = {};
       currentMenuItem.fields.forEach((field: FieldConfig) => {
-        // @ts-ignore
-        newItemTemplate[field.name] = field.type === 'select' && field.options && field.options.length > 0 ? field.options[0] : '';
+        const key = field.name as keyof DataItem;
+        newItemTemplate[key] = field.type === 'select' && field.options && field.options.length > 0 ? field.options[0] : '';
       });
       setEditingItem(newItemTemplate as DataItem);
       setIsFormModalOpen(true);
