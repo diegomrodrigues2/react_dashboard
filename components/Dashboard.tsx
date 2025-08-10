@@ -607,16 +607,23 @@ const Dashboard: React.FC = () => {
             cols={12}
             rowHeight={30}
             compactType="vertical"
-            preventCollision={true}
+            preventCollision={!isEditing}
             allowOverlap={false}
-            isBounded={true}
+            isBounded={!isEditing}
             isDraggable={isEditing}
             isResizable={isEditing}
             isDroppable={isEditing}
             onDrop={handleDrop}
             droppingItem={{ i: '__dropping', w: 6, h: 6 }}
             onLayoutChange={handleLayoutChange}
-            margin={[16,16]}
+            onResizeStop={(_layout, item) => {
+                setLayout(prev => prev.map(l => l.i === item.i ? { ...l, w: item.w, h: item.h } : l));
+            }}
+            onDragStop={(_layout, item) => {
+                setLayout(prev => prev.map(l => l.i === item.i ? { ...l, x: item.x, y: item.y } : l));
+            }}
+            margin={[20,20]}
+            containerPadding={[20,20]}
             className={isEditing ? 'dashboard-editing bg-gray-50 border-2 border-dashed' : ''}
             draggableHandle=".drag-handle"
         >
