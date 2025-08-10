@@ -17,6 +17,12 @@ export default defineConfig(({ mode }) => {
       },
       server: {
         host: true,
+        allowedHosts: [
+          'localhost',
+          '127.0.0.1',
+          '.ngrok-free.app',
+          '.ngrok.io'
+        ]
       },
       build: {
         sourcemap: true

@@ -91,7 +91,7 @@ const aggregate = (items: SalesData[], dataKey: keyof SalesData, type: Aggregati
     }
 };
 
-const processChartData = (data: any[], config: DynamicChartConfig): any[] => {
+const processChartData = (data: any[], config: DynamicChartConfig, monthsOrder: string[] = []): any[] => {
     const { chartType, category, value, legend, stackType, colorValue } = config;
 
     if (chartType === 'Scatter' || chartType === 'Waterfall' || chartType === 'Funnel') {
@@ -147,9 +147,11 @@ const processChartData = (data: any[], config: DynamicChartConfig): any[] => {
             [lineValueKey]: lineValue,
           });
         });
-        // Sort data for time-series consistency
-        const sortedMonths = allMonths;
-        return aggregatedList.sort((a,b) => sortedMonths.indexOf(a[categoryKey]) - sortedMonths.indexOf(b[categoryKey]));
+        // Sort data for time-series consistency if monthsOrder provided
+        if (monthsOrder && monthsOrder.length > 0) {
+            return aggregatedList.sort((a,b) => monthsOrder.indexOf(a[categoryKey]) - monthsOrder.indexOf(b[categoryKey]));
+        }
+        return aggregatedList;
     }
     
 
@@ -340,14 +342,14 @@ const Dashboard: React.FC = () => {
                 const config = widget.config as DynamicChartConfig;
                 const sourceData = dataMap[config.sourceDataKey];
                 if (sourceData) {
-                    dataMap[widget.id] = processChartData(sourceData, config);
+                    dataMap[widget.id] = processChartData(sourceData, config, allMonths);
                 }
             }
         });
         
         return dataMap;
 
-    }, [filteredData, waterfallSourceData, funnelSourceData, dashboardConfig]);
+    }, [filteredData, waterfallSourceData, funnelSourceData, dashboardConfig, allMonths]);
     
     const getWidgetProps = useCallback((widget: DashboardWidget): any => {
         const { id, title, config, component } = widget;
