@@ -7,6 +7,7 @@ interface LoginPageProps {
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -14,6 +15,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
     setError(''); // Clear previous errors
     if (!username || !password) {
       setError('Por favor, preencha o usuário e a senha.');
+      return;
+    }
+    if (/\s/.test(username) || /\s/.test(password)) {
+      setError('Usuário e senha não podem conter espaços.');
       return;
     }
     const success = onLoginAttempt(username, password);
@@ -60,7 +65,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
             <input
               id="password"
               name="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               required
               value={password}
@@ -68,6 +73,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginAttempt }) => {
               className="mt-1 block w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#00A3E0] focus:border-[#00A3E0] sm:text-sm placeholder-gray-400"
               placeholder="••••••••"
             />
+            <div className="mt-2 flex items-center">
+              <input
+                id="show-password"
+                type="checkbox"
+                checked={showPassword}
+                onChange={() => setShowPassword((prev) => !prev)}
+                className="h-4 w-4 text-[#00A3E0] focus:ring-[#00A3E0] border-gray-300 rounded"
+              />
+              <label
+                htmlFor="show-password"
+                className="ml-2 block text-sm text-gray-900"
+              >
+                Mostrar senha
+              </label>
+            </div>
           </div>
 
           {error && (
