@@ -1,28 +1,37 @@
-
 import React from 'react';
-import { FunnelChart as RechartsFunnelChart, Funnel, Tooltip, LabelList, ResponsiveContainer } from 'recharts';
+import {
+    FunnelChart as RechartsFunnelChart,
+    Funnel,
+    Tooltip,
+    LabelList,
+    ResponsiveContainer,
+} from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 
 interface FunnelChartProps {
-    data: { name: string; value: number }[];
+    data: any[];
     title: string;
     config: DynamicChartConfig;
 }
 
 const formatValue = (value: number) => value.toLocaleString('pt-BR');
 
-const CustomTooltip = ({ active, payload, data }: { active?: boolean, payload?: any[], data: any[] }) => {
+export const calculateConversionRates = (
+    data: { name: string; value: number }[],
+) => {
+    return data.map((item, index) => {
+        const prev = data[index - 1]?.value;
+        const rate =
+            index > 0 && typeof prev === 'number' && prev > 0
+                ? (item.value / prev) * 100
+                : null;
+        return { ...item, conversionRate: rate };
+    });
+};
+
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
     if (active && payload && payload.length) {
-        const currentPayload = payload[0].payload;
-        const { name, value } = currentPayload;
-        const currentIndex = data.findIndex(item => item.name === name);
-
-        let conversionRate: number | null = null;
-        if (currentIndex > 0) {
-            const prevValue = data[currentIndex - 1].value;
-            conversionRate = prevValue > 0 ? (value / prevValue) * 100 : 0;
-        }
-
+        const { name, value, conversionRate } = payload[0].payload;
         return (
             <div className="bg-white/90 p-3 border border-gray-200 rounded-lg shadow-lg backdrop-blur-sm">
                 <p className="font-semibold text-gray-700 mb-2">{name}</p>
@@ -41,14 +50,18 @@ const CustomTooltip = ({ active, payload, data }: { active?: boolean, payload?: 
 const FunnelChart: React.FC<FunnelChartProps> = ({ data, title, config }) => {
     const { category, value } = config;
 
-    const chartData = data.map(item => ({
-        // @ts-ignore
-        name: item[category?.dataKey],
-        // @ts-ignore
-        value: item[value?.dataKey],
-        // @ts-ignore
-        fill: '#00A3E0' // Default color, can be customized
-    }));
+    const chartData = calculateConversionRates(
+        data
+            .map((item) => ({
+                // @ts-ignore
+                name: item[category?.dataKey],
+                // @ts-ignore
+                value: Number(item[value?.dataKey]),
+                // @ts-ignore
+                fill: '#00A3E0', // Default color, can be customized
+            }))
+            .filter((item) => Number.isFinite(item.value))
+    );
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col">
@@ -56,17 +69,13 @@ const FunnelChart: React.FC<FunnelChartProps> = ({ data, title, config }) => {
             <div className="flex-grow">
                 <ResponsiveContainer width="100%" height="100%">
                     <RechartsFunnelChart>
-                        <Tooltip content={<CustomTooltip data={chartData} />} />
-                        <Funnel
-                            dataKey="value"
-                            data={chartData}
-                            isAnimationActive
-                        >
-                            <LabelList 
-                                position="center" 
-                                fill="#fff" 
-                                stroke="none" 
-                                dataKey="name" 
+                        <Tooltip content={<CustomTooltip />} />
+                        <Funnel dataKey="value" data={chartData} isAnimationActive>
+                            <LabelList
+                                position="center"
+                                fill="#fff"
+                                stroke="none"
+                                dataKey="name"
                                 className="text-xs font-semibold"
                             />
                         </Funnel>
@@ -78,3 +87,4 @@ const FunnelChart: React.FC<FunnelChartProps> = ({ data, title, config }) => {
 };
 
 export default FunnelChart;
+
