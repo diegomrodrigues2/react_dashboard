@@ -1,0 +1,5 @@
+{
+  "template": "node",
+  "node": "18",
+  "entry": "npm run dev"
+}
