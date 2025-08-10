@@ -38,13 +38,64 @@ const formatValue = (value: number) => value.toLocaleString('pt-BR', { style: 'c
 
 
 const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
-    const { rows: rowConfig, columns: colConfig, values: valConfig, rowSubtotals = true, columnSubtotals = true } = config;
-    
+    const {
+        rows: initialRows,
+        columns: initialCols,
+        values: initialValues,
+        rowSubtotals = true,
+        columnSubtotals = true,
+    } = config;
+
+    const [rows, setRows] = useState<ChartWell[]>(initialRows);
+    const [cols, setCols] = useState<ChartWell[]>(initialCols);
+    const [values] = useState<ChartWell[]>(initialValues);
+    const [valueField, setValueField] = useState<ChartWell>(initialValues[0]);
+
     const [expandedRows, setExpandedRows] = useState(new Set<string>());
     const [expandedCols, setExpandedCols] = useState(new Set<string>());
     const [selectedCell, setSelectedCell] = useState<{ row: string; col: string } | null>(null);
     const [rowSortAsc, setRowSortAsc] = useState(true);
     const [colSortAsc, setColSortAsc] = useState(true);
+
+    const handleDragStart = (
+        e: React.DragEvent<HTMLDivElement>,
+        source: 'rows' | 'columns',
+        index: number
+    ) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ source, index }));
+    };
+
+    const handleDrop = (
+        e: React.DragEvent<HTMLDivElement>,
+        target: 'rows' | 'columns'
+    ) => {
+        e.preventDefault();
+        const dataStr = e.dataTransfer.getData('text/plain');
+        if (!dataStr) return;
+        const { source, index } = JSON.parse(dataStr);
+        if (source === target) return;
+        if (source === 'rows') {
+            const item = rows[index];
+            setRows(r => r.filter((_, i) => i !== index));
+            setCols(c => [...c, item]);
+        } else {
+            const item = cols[index];
+            setCols(c => c.filter((_, i) => i !== index));
+            setRows(r => [...r, item]);
+        }
+    };
+
+    const handleFieldChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newField = values.find(v => v.dataKey === e.target.value);
+        if (newField) {
+            setValueField(prev => ({ ...newField, aggregation: prev.aggregation }));
+        }
+    };
+
+    const handleAggregationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const agg = e.target.value as AggregationType;
+        setValueField(prev => ({ ...prev, aggregation: agg }));
+    };
     
     const toggleRow = useCallback((key: string) => {
         setExpandedRows(prev => {
@@ -65,12 +116,12 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
     }, []);
 
     const { rowTree, colTree, grandTotal } = useMemo(() => {
-        if (!data || data.length === 0 || rowConfig.length === 0 || colConfig.length === 0 || valConfig.length === 0) {
+        if (!data || data.length === 0 || rows.length === 0 || cols.length === 0 || !valueField) {
             return { rowTree: [], colTree: [], grandTotal: 0 };
         }
 
-        const valueField = valConfig[0].dataKey as keyof SalesData;
-        const valueAgg = valConfig[0].aggregation || 'SUM';
+        const valueKey = valueField.dataKey as keyof SalesData;
+        const valueAgg = valueField.aggregation || 'SUM';
 
         const buildTree = (
             items: SalesData[],
@@ -103,12 +154,12 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
             }).sort((a, b) => (sortAsc ? a.label.localeCompare(b.label) : b.label.localeCompare(a.label)));
         };
 
-        const rowTree = buildTree(data, rowConfig, rowSortAsc);
-        const colTree = buildTree(data, colConfig, colSortAsc);
-        const grandTotal = aggregate(data, valueField, valueAgg);
+        const rowTree = buildTree(data, rows, rowSortAsc);
+        const colTree = buildTree(data, cols, colSortAsc);
+        const grandTotal = aggregate(data, valueKey, valueAgg);
 
         return { rowTree, colTree, grandTotal };
-    }, [data, rowConfig, colConfig, valConfig, rowSortAsc, colSortAsc]);
+    }, [data, rows, cols, valueField, rowSortAsc, colSortAsc]);
 
     const getVisibleNodes = (nodes: TreeNode[], expandedKeys: Set<string>): TreeNode[] => {
         const visible: TreeNode[] = [];
@@ -124,13 +175,18 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
         return visible;
     };
     
-    const getValue = useCallback((rowNode: TreeNode, colNode: TreeNode): number => {
-        // Find intersection of items. Inefficient, but works for this demo.
-        // For performance, use item IDs in Sets.
-        const rowItemIds = new Set(rowNode.items.map(i => i.id));
-        const intersectingItems = colNode.items.filter(item => rowItemIds.has(item.id));
-        return aggregate(intersectingItems, valConfig[0].dataKey as keyof SalesData, valConfig[0].aggregation);
-    }, [valConfig]);
+    const getValue = useCallback(
+        (rowNode: TreeNode, colNode: TreeNode): number => {
+            const rowItemIds = new Set(rowNode.items.map(i => i.id));
+            const intersectingItems = colNode.items.filter(item => rowItemIds.has(item.id));
+            return aggregate(
+                intersectingItems,
+                valueField.dataKey as keyof SalesData,
+                valueField.aggregation
+            );
+        },
+        [valueField]
+    );
 
 
     const getAllKeys = (nodes: TreeNode[], keys: Set<string>) => {
@@ -180,14 +236,79 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
     return (
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col">
             <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">{title}</h3>
-            
+
+            <div className="flex gap-4 mb-4">
+                <div
+                    className="p-2 border rounded"
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => handleDrop(e, 'rows')}
+                    data-testid="rows-well"
+                >
+                    <div className="text-xs font-semibold mb-1">Linhas</div>
+                    {rows.map((r, idx) => (
+                        <div
+                            key={r.dataKey as string}
+                            draggable
+                            onDragStart={e => handleDragStart(e, 'rows', idx)}
+                            className="cursor-move text-xs bg-gray-100 rounded px-1 py-0.5 mb-1"
+                        >
+                            {r.label || r.dataKey}
+                        </div>
+                    ))}
+                </div>
+                <div
+                    className="p-2 border rounded"
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => handleDrop(e, 'columns')}
+                    data-testid="columns-well"
+                >
+                    <div className="text-xs font-semibold mb-1">Colunas</div>
+                    {cols.map((c, idx) => (
+                        <div
+                            key={c.dataKey as string}
+                            draggable
+                            onDragStart={e => handleDragStart(e, 'columns', idx)}
+                            className="cursor-move text-xs bg-gray-100 rounded px-1 py-0.5 mb-1"
+                        >
+                            {c.label || c.dataKey}
+                        </div>
+                    ))}
+                </div>
+                <div className="p-2 border rounded flex flex-col" data-testid="value-editor">
+                    <label className="text-xs font-semibold mb-1">Valor</label>
+                    <select
+                        className="border p-1 text-xs mb-1"
+                        value={valueField.dataKey as string}
+                        onChange={handleFieldChange}
+                        data-testid="value-field-select"
+                    >
+                        {values.map(v => (
+                            <option key={v.dataKey as string} value={v.dataKey as string}>
+                                {v.label || v.dataKey}
+                            </option>
+                        ))}
+                    </select>
+                    <select
+                        className="border p-1 text-xs"
+                        value={valueField.aggregation || 'SUM'}
+                        onChange={handleAggregationChange}
+                        data-testid="aggregation-select"
+                    >
+                        <option value="SUM">SUM</option>
+                        <option value="COUNT">COUNT</option>
+                        <option value="AVERAGE">AVERAGE</option>
+                        <option value="NONE">NONE</option>
+                    </select>
+                </div>
+            </div>
+
             <div className="flex flex-wrap items-center gap-2 mb-4">
                 <span className="text-xs font-semibold text-gray-600 mr-2">Linhas:</span>
                 <button onClick={expandAllRows} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Expandir Tudo</button>
                 <button onClick={collapseAllRows} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Recolher Tudo</button>
                 <button onClick={() => setRowSortAsc(true)} className={`px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded ${rowSortAsc ? 'font-semibold' : ''}`}>A-Z</button>
                 <button onClick={() => setRowSortAsc(false)} className={`px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded ${!rowSortAsc ? 'font-semibold' : ''}`}>Z-A</button>
-                {colConfig.length > 0 && <>
+                {cols.length > 0 && <>
                     <span className="text-xs font-semibold text-gray-600 ml-4 mr-2">Colunas:</span>
                     <button onClick={expandAllCols} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Expandir Tudo</button>
                     <button onClick={collapseAllCols} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Recolher Tudo</button>
@@ -201,7 +322,7 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
                     <thead className="bg-gray-50 sticky top-0 z-20">
                         <tr>
                             <th scope="col" className="px-3 py-3.5 text-left font-semibold text-gray-900 sticky left-0 bg-gray-50 z-30 border-r border-gray-300 min-w-[200px]">
-                               {rowConfig.map(r => r.label || r.dataKey).join(' / ')}
+                               {rows.map(r => r.label || r.dataKey).join(' / ')}
                             </th>
                             {visibleCols.map(col => (
                                 <th key={col.uniqueKey} scope="col" className="px-3 py-3.5 text-right font-semibold text-gray-900" style={{ paddingLeft: `${col.level * 1.5 + 0.75}rem`}}>
