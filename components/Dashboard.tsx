@@ -22,12 +22,14 @@ import TreemapChart from './charts/TreemapChart.tsx';
 import Matrix from './charts/Matrix.tsx';
 import XIcon from './icons/XIcon.tsx';
 import DataTable from './DataTable.tsx';
-import { SalesData, DashboardWidget, KpiConfig, DataTableConfig, DynamicChartConfig, AggregationType, MatrixConfig, BubbleMapConfig, ChoroplethMapConfig, HeatmapConfig, DashboardConfig, WidgetLayout } from '../types.ts';
+import { SalesData, DashboardWidget, KpiConfig, DataTableConfig, DynamicChartConfig, AggregationType, MatrixConfig, BubbleMapConfig, ChoroplethMapConfig, HeatmapConfig, DashboardConfig, WidgetLayout, ChartComponentType, FieldConfig } from '../types.ts';
 import { ALL_CATEGORIES } from '../constants.ts';
 import { getSalesData, getWaterfallData, getFunnelData, getAllMonths, getDashboardConfig, saveDashboardConfig } from '../services/dashboardData.ts';
 import BubbleMap from './charts/BubbleMap.tsx';
 import ChoroplethMap from './charts/ChoroplethMap.tsx';
 import HeatmapChart from './charts/HeatmapChart.tsx';
+import Modal from './Modal.tsx';
+import WidgetPalette, { createWidgetFromType } from './WidgetPalette.tsx';
 
 export type { SalesData };
 
@@ -44,6 +46,11 @@ export const applyLayoutToWidgets = (config: DashboardConfig, layout: Layout[]):
         widgets: config.widgets.map(w => ({ ...w, layout: map[w.id] || w.layout }))
     };
 };
+
+export const addWidget = (config: DashboardConfig, widget: DashboardWidget): DashboardConfig => ({
+    ...config,
+    widgets: [...config.widgets, widget]
+});
 
 const MultiSelectFilter = ({ options, selected, onChange, placeholder }: {
     options: string[], selected: string[], onChange: (selected: string[]) => void, placeholder: string
@@ -229,6 +236,7 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [layout, setLayout] = useState<Layout[]>([]);
+    const [editingWidget, setEditingWidget] = useState<DashboardWidget | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -278,6 +286,28 @@ const Dashboard: React.FC = () => {
 
     const handleLayoutChange = (newLayout: Layout[]) => {
         if (isEditing) setLayout(newLayout);
+    };
+
+    const handleDrop = (_layout: Layout[], item: Layout, e: any) => {
+        const type = e.dataTransfer?.getData('widgetType') as ChartComponentType;
+        if (!type || !dashboardConfig) return;
+        const id = `${type}-${Date.now()}`;
+        const widget = createWidgetFromType(type, id);
+        const layoutItem = { i: id, x: item.x, y: item.y, w: item.w, h: item.h };
+        const widgetWithLayout = { ...widget, layout: { x: item.x, y: item.y, w: item.w, h: item.h } };
+        const newConfig = addWidget(dashboardConfig, widgetWithLayout);
+        setDashboardConfig(newConfig);
+        setLayout(prev => [...prev, layoutItem]);
+        saveDashboardConfig(newConfig);
+    };
+
+    const handleEditSubmit = (data: any) => {
+        if (!editingWidget || !dashboardConfig) return;
+        const newWidgets = dashboardConfig.widgets.map(w => w.id === editingWidget.id ? { ...w, title: data.title } : w);
+        const newConfig = { ...dashboardConfig, widgets: newWidgets };
+        setDashboardConfig(newConfig);
+        saveDashboardConfig(newConfig);
+        setEditingWidget(null);
     };
 
     const toggleEdit = async () => {
@@ -443,26 +473,43 @@ const Dashboard: React.FC = () => {
             <p className="mt-2">Tente ajustar ou limpar os filtros para visualizar os dados.</p>
         </div>
       ) : (
+        <>
+        {isEditing && <WidgetPalette />}
         <ReactGridLayout
             layout={layout}
             cols={12}
             rowHeight={30}
             isDraggable={isEditing}
             isResizable={isEditing}
+            isDroppable={isEditing}
+            onDrop={handleDrop}
+            droppingItem={{ i: '__dropping', w: 2, h: 2 }}
             onLayoutChange={handleLayoutChange}
             margin={[16,16]}
+            className={isEditing ? 'dashboard-editing bg-gray-50 border-2 border-dashed' : ''}
         >
             {dashboardConfig.widgets.map(widget => {
                 const Component = componentMap[widget.component];
                 const props = getWidgetProps(widget);
                 return (
-                    <div key={widget.id}>
+                    <div key={widget.id} className={isEditing ? 'border border-dashed relative' : 'relative'}>
+                        {isEditing && <button onClick={() => setEditingWidget(widget)} className="absolute top-1 right-1 bg-white p-1 rounded shadow" aria-label="Editar widget">✏️</button>}
                         <Component {...props} />
                     </div>
                 );
             })}
         </ReactGridLayout>
+        {isEditing && <style>{`.dashboard-editing .react-grid-placeholder{background:rgba(0,163,224,0.2);border:2px dashed #00A3E0;}`}</style>}
+        </>
       )}
+      <Modal
+        isOpen={!!editingWidget}
+        onClose={() => setEditingWidget(null)}
+        onSubmit={handleEditSubmit}
+        title="Editar Widget"
+        fields={[{ name: 'title', label: 'Título', type: 'text', required: true } as FieldConfig<any>]}
+        initialData={{ title: editingWidget?.title || '' }}
+      />
     </div>
   );
 };
