@@ -23,7 +23,9 @@
       background: #718096; /* Tailwind gray-600 */
     }
     body {
-      overflow: hidden; /* Prevent body scrollbars when using internal scrolling containers */
+      /* Allow vertical scrolling on dashboards and other full-page layouts */
+      overflow-y: auto;
+      overflow-x: hidden;
     }
   </style>
 <script type="importmap">
