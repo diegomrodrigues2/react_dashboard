@@ -357,9 +357,11 @@ const Dashboard: React.FC = () => {
             case 'KpiCard': {
                 const kpiConfig = config as KpiConfig;
                 const kpiData = widgetData.kpiData;
+                const fallbackFormatter = (value: number) => typeof value === 'number' ? value.toLocaleString('pt-BR') : String(value ?? '');
+                const formatter = typeof kpiConfig.formatter === 'function' ? kpiConfig.formatter : fallbackFormatter;
                 return {
                     title,
-                    value: kpiData ? kpiConfig.formatter(kpiData[kpiConfig.valueKey]) : '',
+                    value: kpiData ? formatter(kpiData[kpiConfig.valueKey]) : '',
                     description: kpiConfig.description,
                     isLoading: widget.isLoading,
                     error: widget.error,
@@ -462,7 +464,11 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-wrap items-center justify-end gap-3 bg-white p-3 rounded-lg shadow-sm border border-gray-200 w-full md:w-auto">
             {dashboardConfig.filters.map(filterKey => {
                 const f = filterOptions[filterKey];
-                return <MultiSelectFilter key={filterKey} placeholder={`Filtrar por ${f.label}...`} options={f.options} selected={f.selected} onChange={f.setter} />
+                return (
+                    <React.Fragment key={filterKey}>
+                        <MultiSelectFilter placeholder={`Filtrar por ${f.label}...`} options={f.options} selected={f.selected} onChange={f.setter} />
+                    </React.Fragment>
+                );
             })}
             {hasFilters && <button onClick={clearFilters} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors" title="Limpar Filtros"><XIcon title="Limpar Filtros" className="w-5 h-5"/></button>}
             <button onClick={toggleEdit} className="p-2 text-white bg-[#00A3E0] hover:bg-[#0082B8] rounded-md">{isEditing ? 'Salvar Layout' : 'Editar Layout'}</button>
@@ -495,7 +501,11 @@ const Dashboard: React.FC = () => {
                 const Component = componentMap[widget.component];
                 const props = getWidgetProps(widget);
                 return (
-                    <div key={widget.id} className={isEditing ? 'border border-dashed relative' : 'relative'}>
+                    <div
+                        key={widget.id}
+                        className={(isEditing ? 'border border-dashed relative ' : 'relative ') + 'h-full'}
+                        style={{ minHeight: 220 }}
+                    >
                         {isEditing && widget.component !== 'KpiCard' && (
                             <span className="drag-handle absolute top-1 left-1 cursor-move">⋮⋮</span>
                         )}
