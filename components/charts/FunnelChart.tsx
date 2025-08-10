@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { FunnelChart as RechartsFunnelChart, Funnel, Tooltip, LabelList, ResponsiveContainer } from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 
-interface FunnelChartProps {
-    data: { name: string; value: number }[];
+interface FunnelChartProps<T extends Record<string, unknown>> {
+    data: T[];
     title: string;
-    config: DynamicChartConfig;
+    config: DynamicChartConfig<T>;
 }
 
 const formatValue = (value: number) => value.toLocaleString('pt-BR');
@@ -35,14 +35,12 @@ const CustomTooltip = ({ active, payload, data }: { active?: boolean; payload?: 
     return null;
 };
 
-const FunnelChart: React.FC<FunnelChartProps> = ({ data, title, config }) => {
+const FunnelChart = <T extends Record<string, unknown>>({ data, title, config }: FunnelChartProps<T>) => {
     const { category, value } = config;
 
     const initialData = data.map((item, index) => ({
-        // @ts-ignore
-        name: item[category?.dataKey],
-        // @ts-ignore
-        value: item[value?.dataKey],
+        name: category ? String(item[category.dataKey as keyof T]) : '',
+        value: value ? Number(item[value.dataKey as keyof T]) : 0,
         id: index.toString(),
         fill: '#00A3E0'
     }));

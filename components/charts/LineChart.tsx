@@ -17,7 +17,7 @@ interface LineChartProps {
    * <LineChart lineProps={{ dot: { r: 6 }, strokeDasharray: '5 5' }} />
    * ```
    */
-  lineProps?: Partial<LineProps>;
+  lineProps?: Partial<Omit<LineProps, 'ref'>>;
 }
 
 const lineColors = ['#00A3E0', '#D9262E', '#64B5F6', '#FFCA28'];

@@ -25,5 +25,6 @@
     "sourceMap": true
   ,
     "types": ["vitest", "node"]
-  }
+  },
+  "exclude": ["tests"]
 }

@@ -75,17 +75,23 @@ export interface SalesData {
 
 export type DataItem = ContaGestora | ContaAssessor | CbioBtc | SplitExcecao | BrokerCode | SalesData;
 
-export interface ColumnConfig<T extends DataItem | ActivityLog> { 
+/** Utility type to extract string keys from a record */
+export type DataKey<T extends object> = Extract<keyof T, string>;
+
+/** Utility type for retrieving the value type of a key from a record */
+export type DataValue<T extends object, K extends DataKey<T>> = T[K];
+
+export interface ColumnConfig<T extends object | ActivityLog> {
   header: string;
-  accessor: keyof T;
-  render?: (value: any, row: T) => React.ReactNode;
+  accessor: DataKey<T>;
+  render?: (value: DataValue<T, DataKey<T>>, row: T) => React.ReactNode;
 }
 
-export interface FieldConfig<T extends DataItem = DataItem> { // Made generic, default to DataItem for broader use if needed
-  name: keyof T; // Changed from keyof DataItem
+export interface FieldConfig<T extends object = DataItem> {
+  name: DataKey<T>;
   label: string;
-  type: 'text' | 'number' | 'select' | 'date'; 
-  options?: string[]; 
+  type: 'text' | 'number' | 'select' | 'date';
+  options?: string[];
   required?: boolean;
 }
 
@@ -150,76 +156,83 @@ export interface DataTableConfig {
 // New Dynamic Chart Configuration Types
 export type AggregationType = 'SUM' | 'COUNT' | 'AVERAGE' | 'NONE';
 
-export interface ChartWell {
-    dataKey: keyof SalesData | 'category' | 'value' | 'stage' | 'name' | 'size' | 'colorMetric';
+export interface ChartWell<T extends object = Record<string, unknown>> {
+    dataKey: DataKey<T> | 'category' | 'value' | 'stage' | 'name' | 'size' | 'colorMetric';
     label?: string;
     aggregation?: AggregationType;
     formatter?: (value: number) => string;
 }
 
-export interface DynamicChartConfig {
+export interface DynamicChartConfig<T extends object = Record<string, unknown>> {
     sourceDataKey: 'detailedData' | 'waterfallData' | 'funnelData';
     chartType: 'Bar' | 'Line' | 'Pie' | 'Scatter' | 'Area' | 'Combo' | 'Waterfall' | 'Funnel' | 'Treemap';
-    
-    // Wells (data fields)
-    category?: ChartWell; // For Pie: slices. For Bar/Line: axis categories. For Scatter: 'Details' for each point. For Funnel/Treemap: category name.
-    value?: ChartWell;    // For Pie: slice values. For Bar/Line: axis values. For Combo: Bar value. For Waterfall: Change value. For Funnel: stage value. For Treemap: node size.
-    colorValue?: ChartWell; // For Treemap color scale.
-    lineValue?: ChartWell; // For Combo chart's line value
-    
-    // Wells for Scatter charts
-    x?: ChartWell;
-    y?: ChartWell;
-    size?: ChartWell;     // Turns Scatter into Bubble chart
-    playAxis?: ChartWell; // Adds animation dimension
 
-    legend?: ChartWell;  // For splitting/coloring data in Bar, Line, Scatter
-    
+    // Wells (data fields)
+    category?: ChartWell<T>; // For Pie: slices. For Bar/Line: axis categories. For Scatter: 'Details' for each point. For Funnel/Treemap: category name.
+    value?: ChartWell<T>;    // For Pie: slice values. For Bar/Line: axis values. For Combo: Bar value. For Waterfall: Change value. For Funnel: stage value. For Treemap: node size.
+    colorValue?: ChartWell<T>; // For Treemap color scale.
+    lineValue?: ChartWell<T>; // For Combo chart's line value
+
+    // Wells for Scatter charts
+    x?: ChartWell<T>;
+    y?: ChartWell<T>;
+    size?: ChartWell<T>;     // Turns Scatter into Bubble chart
+    playAxis?: ChartWell<T>; // Adds animation dimension
+
+    legend?: ChartWell<T>;  // For splitting/coloring data in Bar, Line, Scatter
+
     // Config specific to chart visuals
     layout?: 'horizontal' | 'vertical'; // For Bar charts
     stackType?: 'none' | 'stacked' | '100%stacked'; // For Bar/Area charts
 
     // Future-proofing for more advanced features
-    smallMultiples?: ChartWell;
-    tooltips?: ChartWell[];
+    smallMultiples?: ChartWell<T>;
+    tooltips?: ChartWell<T>[];
 }
 
-export interface MatrixConfig {
+export interface MatrixConfig<T extends object = Record<string, unknown>> {
     sourceDataKey: 'detailedData';
-    rows: ChartWell[];
-    columns: ChartWell[];
-    values: ChartWell[];
+    rows: ChartWell<T>[];
+    columns: ChartWell<T>[];
+    values: ChartWell<T>[];
     rowSubtotals?: boolean;
     columnSubtotals?: boolean;
 }
 
-export interface HeatmapConfig {
+export interface HeatmapConfig<T extends object = Record<string, unknown>> {
     sourceDataKey: 'detailedData';
-    x: ChartWell;
-    y: ChartWell;
-    value: ChartWell;
+    x: ChartWell<T>;
+    y: ChartWell<T>;
+    value: ChartWell<T>;
 }
 
-export interface BubbleMapConfig {
+export interface BubbleMapConfig<T extends object = Record<string, unknown>> {
     sourceDataKey: 'detailedData';
     location: {
         coordinatesKey: 'coordinates';
-        labelKey: keyof SalesData;
+        labelKey: DataKey<T>;
     };
-    size: ChartWell;
-    color: ChartWell;
+    size: ChartWell<T>;
+    color: ChartWell<T>;
 }
 
-export interface ChoroplethMapConfig {
+export interface ChoroplethMapConfig<T extends object = Record<string, unknown>> {
     sourceDataKey: 'detailedData';
     geo: {
-        dataKey: keyof SalesData;
+        dataKey: DataKey<T>;
         featureKey: string;
     };
-    value: ChartWell;
+    value: ChartWell<T>;
 }
 
-export type WidgetConfig = KpiConfig | DynamicChartConfig | DataTableConfig | MatrixConfig | BubbleMapConfig | ChoroplethMapConfig | HeatmapConfig;
+export type WidgetConfig<T extends object = Record<string, unknown>> =
+    | KpiConfig
+    | DynamicChartConfig<T>
+    | DataTableConfig
+    | MatrixConfig<T>
+    | BubbleMapConfig<T>
+    | ChoroplethMapConfig<T>
+    | HeatmapConfig<T>;
 
 export interface WidgetLayout {
     x: number;
