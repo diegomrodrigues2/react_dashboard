@@ -42,6 +42,9 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
     
     const [expandedRows, setExpandedRows] = useState(new Set<string>());
     const [expandedCols, setExpandedCols] = useState(new Set<string>());
+    const [selectedCell, setSelectedCell] = useState<{ row: string; col: string } | null>(null);
+    const [rowSortAsc, setRowSortAsc] = useState(true);
+    const [colSortAsc, setColSortAsc] = useState(true);
     
     const toggleRow = useCallback((key: string) => {
         setExpandedRows(prev => {
@@ -70,16 +73,17 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
         const valueAgg = valConfig[0].aggregation || 'SUM';
 
         const buildTree = (
-            items: SalesData[], 
-            hierarchy: ChartWell[], 
-            level = 0, 
+            items: SalesData[],
+            hierarchy: ChartWell[],
+            sortAsc: boolean,
+            level = 0,
             parentKey = ''
         ): TreeNode[] => {
             if (level >= hierarchy.length) return [];
 
             const field = hierarchy[level].dataKey as keyof SalesData;
             const groups = new Map<string, SalesData[]>();
-            
+
             items.forEach(item => {
                 const key = String(item[field] ?? '');
                 if (!groups.has(key)) groups.set(key, []);
@@ -94,17 +98,17 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
                     level,
                     items: groupItems,
                     subtotal: aggregate(groupItems, valueField, valueAgg),
-                    children: buildTree(groupItems, hierarchy, level + 1, uniqueKey),
+                    children: buildTree(groupItems, hierarchy, sortAsc, level + 1, uniqueKey),
                 };
-            }).sort((a,b) => a.label.localeCompare(b.label));
+            }).sort((a, b) => (sortAsc ? a.label.localeCompare(b.label) : b.label.localeCompare(a.label)));
         };
 
-        const rowTree = buildTree(data, rowConfig);
-        const colTree = buildTree(data, colConfig);
+        const rowTree = buildTree(data, rowConfig, rowSortAsc);
+        const colTree = buildTree(data, colConfig, colSortAsc);
         const grandTotal = aggregate(data, valueField, valueAgg);
 
         return { rowTree, colTree, grandTotal };
-    }, [data, rowConfig, colConfig, valConfig]);
+    }, [data, rowConfig, colConfig, valConfig, rowSortAsc, colSortAsc]);
 
     const getVisibleNodes = (nodes: TreeNode[], expandedKeys: Set<string>): TreeNode[] => {
         const visible: TreeNode[] = [];
@@ -152,6 +156,12 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
     };
     const collapseAllCols = () => setExpandedCols(new Set());
 
+    const handleCellClick = (rowKey: string, colKey: string) => {
+        setSelectedCell(prev =>
+            prev && prev.row === rowKey && prev.col === colKey ? null : { row: rowKey, col: colKey }
+        );
+    };
+
 
     const visibleRows = getVisibleNodes(rowTree, expandedRows);
     const visibleCols = getVisibleNodes(colTree, expandedCols);
@@ -172,14 +182,18 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
             <h3 className="text-lg font-semibold text-gray-800 mb-2 text-center">{title}</h3>
             
             <div className="flex flex-wrap items-center gap-2 mb-4">
-                 <span className="text-xs font-semibold text-gray-600 mr-2">Linhas:</span>
-                 <button onClick={expandAllRows} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Expandir Tudo</button>
-                 <button onClick={collapseAllRows} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Recolher Tudo</button>
-                 {colConfig.length > 1 && <>
+                <span className="text-xs font-semibold text-gray-600 mr-2">Linhas:</span>
+                <button onClick={expandAllRows} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Expandir Tudo</button>
+                <button onClick={collapseAllRows} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Recolher Tudo</button>
+                <button onClick={() => setRowSortAsc(true)} className={`px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded ${rowSortAsc ? 'font-semibold' : ''}`}>A-Z</button>
+                <button onClick={() => setRowSortAsc(false)} className={`px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded ${!rowSortAsc ? 'font-semibold' : ''}`}>Z-A</button>
+                {colConfig.length > 0 && <>
                     <span className="text-xs font-semibold text-gray-600 ml-4 mr-2">Colunas:</span>
                     <button onClick={expandAllCols} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Expandir Tudo</button>
                     <button onClick={collapseAllCols} className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">Recolher Tudo</button>
-                 </>}
+                    <button onClick={() => setColSortAsc(true)} className={`px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded ${colSortAsc ? 'font-semibold' : ''}`}>A-Z</button>
+                    <button onClick={() => setColSortAsc(false)} className={`px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded ${!colSortAsc ? 'font-semibold' : ''}`}>Z-A</button>
+                </>}
             </div>
 
             <div className="overflow-auto rounded-md border border-gray-200" style={{maxHeight: '600px'}}>
@@ -217,7 +231,19 @@ const Matrix: React.FC<MatrixProps> = ({ data, title, config }) => {
                                        <span>{row.label}</span>
                                     </div>
                                 </th>
-                                {visibleCols.map(col => <td key={col.uniqueKey} className="px-3 py-2 text-right text-gray-700 whitespace-nowrap">{formatValue(getValue(row, col))}</td>)}
+                                {visibleCols.map(col => (
+                                    <td
+                                        key={col.uniqueKey}
+                                        onClick={() => handleCellClick(row.uniqueKey, col.uniqueKey)}
+                                        className={`px-3 py-2 text-right text-gray-700 whitespace-nowrap cursor-pointer ${
+                                            selectedCell?.row === row.uniqueKey && selectedCell?.col === col.uniqueKey
+                                                ? 'bg-yellow-100'
+                                                : ''
+                                        }`}
+                                    >
+                                        {formatValue(getValue(row, col))}
+                                    </td>
+                                ))}
                                 {rowSubtotals && <td className="px-3 py-2 text-right font-semibold text-gray-900 border-l-2 border-gray-300 bg-gray-50 sticky right-0 z-10 whitespace-nowrap">{formatValue(row.subtotal)}</td>}
                             </tr>
                         ))}
