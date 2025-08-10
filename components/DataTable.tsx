@@ -260,12 +260,12 @@ export default function DataTable<T extends DataItem>({
             className="px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#00A3E0] focus:border-[#00A3E0] sm:text-sm placeholder-gray-400 w-full sm:w-64 order-2 sm:order-1"
             aria-label="Buscar na tabela"
           />
-           <button
+          <button
             onClick={handleClearAllFilters}
             className="flex items-center bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md shadow-md transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 w-full sm:w-auto justify-center order-2 sm:order-1 whitespace-nowrap"
             title="Limpar todos os filtros e ordenação"
           >
-            <FilterSlashIcon className="w-5 h-5 mr-2" />
+            <FilterSlashIcon title="Limpar filtros" className="w-5 h-5 mr-2" />
             Limpar Todos os Filtros
           </button>
           {canPerformWriteActions && (
@@ -273,7 +273,7 @@ export default function DataTable<T extends DataItem>({
               onClick={onAddItem}
               className="flex items-center bg-[#00A3E0] hover:bg-[#0082B8] text-white font-semibold py-2 px-4 rounded-md shadow-md transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00A3E0] w-full sm:w-auto justify-center order-1 sm:order-3"
             >
-              <PlusIcon className="w-5 h-5 mr-2" />
+              <PlusIcon title="Adicionar novo" className="w-5 h-5 mr-2" />
               Adicionar Novo
             </button>
           )}
@@ -309,7 +309,7 @@ export default function DataTable<T extends DataItem>({
                       aria-haspopup="true"
                       aria-expanded={activeFilterDropdown === col.accessor}
                     >
-                      <FunnelIcon className="w-4 h-4" />
+                      <FunnelIcon title={`Filtrar ${col.header}`} className="w-4 h-4" />
                     </button>
                   </div>
                   {activeFilterDropdown === col.accessor && (
@@ -321,7 +321,7 @@ export default function DataTable<T extends DataItem>({
                       <div className="flex justify-between items-center mb-2">
                          <h4 className="text-sm font-semibold text-gray-700">Filtrar {col.header}</h4>
                          <button onClick={closeFilterDropdown} className="p-1 text-gray-400 hover:text-gray-600">
-                            <XIcon className="w-4 h-4" />
+                            <XIcon title="Fechar" className="w-4 h-4" />
                          </button>
                       </div>
                      
@@ -411,7 +411,7 @@ export default function DataTable<T extends DataItem>({
                           className="text-[#00A3E0] hover:text-[#0082B8] transition-colors duration-150 p-1 rounded hover:bg-[#E0F7FF]"
                           title="Editar"
                         >
-                          <PencilIcon className="w-5 h-5" />
+                          <PencilIcon title="Editar" className="w-5 h-5" />
                         </button>
                       )}
                       {userRole === 'admin' && (
@@ -420,7 +420,7 @@ export default function DataTable<T extends DataItem>({
                           className="text-[#D9262E] hover:text-[#B01F25] transition-colors duration-150 p-1 rounded hover:bg-[#FEEBEE]"
                           title="Excluir"
                         >
-                          <TrashIcon className="w-5 h-5" />
+                          <TrashIcon title="Excluir" className="w-5 h-5" />
                         </button>
                       )}
                     </td>

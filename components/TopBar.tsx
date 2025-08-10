@@ -48,7 +48,7 @@ const TopBar: React.FC<TopBarProps> = ({
           className="p-1 rounded-md hover:bg-[#003C73] focus:outline-none focus:ring-2 focus:ring-[#00A3E0]"
           aria-label="Alternar menu lateral"
         >
-          <MenuIcon className="w-7 h-7 text-[#00A3E0]" />
+          <MenuIcon title="Abrir menu" className="w-7 h-7 text-[#00A3E0]" />
         </button>
         <h1 className="text-xl font-semibold truncate" title="StoneX Business Rules Manager">
           StoneX BRules
@@ -65,7 +65,7 @@ const TopBar: React.FC<TopBarProps> = ({
             aria-expanded={isUserDropdownOpen}
             aria-controls="user-menu"
           >
-            <UserCircleIcon className="w-7 h-7" />
+            <UserCircleIcon title="Usuário" className="w-7 h-7" />
             <span className="hidden sm:inline text-sm font-medium">{userName}</span>
           </button>
 
@@ -84,7 +84,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   role="menuitem"
                   id="user-menu-item-0"
                 >
-                  <IdentificationIcon className="w-5 h-5 mr-3 text-gray-500" />
+                  <IdentificationIcon title="Perfil" className="w-5 h-5 mr-3 text-gray-500" />
                   Perfil
                 </button>
                 <button
@@ -93,7 +93,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   role="menuitem"
                   id="user-menu-item-1"
                 >
-                  <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-3 text-gray-500" />
+                  <ArrowLeftOnRectangleIcon title="Logout" className="w-5 h-5 mr-3 text-gray-500" />
                   Logout
                 </button>
               </div>
