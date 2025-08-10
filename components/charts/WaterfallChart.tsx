@@ -1,12 +1,18 @@
 
 import React, { useMemo } from 'react';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, Cell
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label, Cell, LabelList
 } from 'recharts';
 import { DynamicChartConfig } from '../../types.ts';
 
+interface WaterfallChartDataPoint {
+    category: string;
+    value: number;
+    subtotal?: boolean;
+}
+
 interface WaterfallChartProps {
-    data: { category: string; value: number }[];
+    data: WaterfallChartDataPoint[];
     title: string;
     config: DynamicChartConfig;
 }
@@ -21,46 +27,45 @@ const currencyFormatter = (val: any) => {
     }).format(val);
 };
 
-const processData = (data: { category: string; value: number }[]) => {
+const processData = (data: WaterfallChartDataPoint[]) => {
     let cumulative = 0;
-    const processed = data.map((item) => {
+    const processed: {
+        category: string;
+        value: number;
+        range: [number, number];
+        type: 'increase' | 'decrease' | 'subtotal' | 'total';
+        label?: string;
+    }[] = [];
+
+    data.forEach(item => {
         const start = cumulative;
         cumulative += item.value;
-        return {
+        processed.push({
             category: item.category,
             value: item.value,
-            start: start,
-            end: cumulative,
-        };
+            range: [start, cumulative],
+            type: item.value >= 0 ? 'increase' : 'decrease'
+        });
+
+        if (item.subtotal) {
+            processed.push({
+                category: 'Subtotal',
+                value: cumulative,
+                range: [0, cumulative],
+                type: 'subtotal',
+                label: 'Subtotal'
+            });
+        }
     });
 
     processed.push({
         category: 'Total Final',
         value: cumulative,
-        start: 0,
-        end: cumulative,
+        range: [0, cumulative],
+        type: 'total'
     });
 
-    return processed.map(item => {
-        const isTotal = item.category === 'Total Final';
-        const isPositive = item.value >= 0;
-
-        if (isTotal) {
-            return {
-                category: item.category,
-                value: item.value,
-                range: [0, item.end],
-                type: 'total'
-            };
-        }
-        
-        return {
-            category: item.category,
-            value: item.value,
-            range: [item.start, item.end],
-            type: isPositive ? 'increase' : 'decrease'
-        };
-    });
+    return processed;
 };
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -69,8 +74,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         return (
             <div className="bg-white/90 p-3 border border-gray-200 rounded-lg shadow-lg backdrop-blur-sm">
                 <p className="font-semibold text-gray-700 mb-1">{label}</p>
-                <div className="text-sm" style={{ color: data.type === 'increase' ? '#4CAF50' : data.type === 'decrease' ? '#D9262E' : '#00A3E0' }}>
-                    {data.type === 'total' ? 'Total: ' : 'Variação: '}
+                <div className="text-sm" style={{ color: data.type === 'increase' ? '#4CAF50' : data.type === 'decrease' ? '#D9262E' : data.type === 'subtotal' ? '#FF9800' : '#00A3E0' }}>
+                    {data.type === 'total' ? 'Total: ' : data.type === 'subtotal' ? 'Subtotal: ' : 'Variação: '}
                     {currencyFormatter(data.value)}
                 </div>
             </div>
@@ -105,8 +110,10 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ data, title, config }) 
                                 if (entry.type === 'increase') color = '#4CAF50';
                                 else if (entry.type === 'decrease') color = '#D9262E';
                                 else if (entry.type === 'total') color = '#00A3E0';
+                                else if (entry.type === 'subtotal') color = '#FF9800';
                                 return <Cell key={`cell-${index}`} fill={color} />;
                             })}
+                            <LabelList dataKey="label" position="top" />
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
