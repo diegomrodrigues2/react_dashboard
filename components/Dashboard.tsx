@@ -487,13 +487,19 @@ const Dashboard: React.FC = () => {
             onLayoutChange={handleLayoutChange}
             margin={[16,16]}
             className={isEditing ? 'dashboard-editing bg-gray-50 border-2 border-dashed' : ''}
+            draggableHandle=".drag-handle"
         >
             {dashboardConfig.widgets.map(widget => {
                 const Component = componentMap[widget.component];
                 const props = getWidgetProps(widget);
                 return (
                     <div key={widget.id} className={isEditing ? 'border border-dashed relative' : 'relative'}>
-                        {isEditing && <button onClick={() => setEditingWidget(widget)} className="absolute top-1 right-1 bg-white p-1 rounded shadow" aria-label="Editar widget">✏️</button>}
+                        {isEditing && widget.component !== 'KpiCard' && (
+                            <span className="drag-handle absolute top-1 left-1 cursor-move">⋮⋮</span>
+                        )}
+                        {isEditing && (
+                            <button onClick={() => setEditingWidget(widget)} className="absolute top-1 right-1 bg-white p-1 rounded shadow" aria-label="Editar widget">✏️</button>
+                        )}
                         <Component {...props} />
                     </div>
                 );
