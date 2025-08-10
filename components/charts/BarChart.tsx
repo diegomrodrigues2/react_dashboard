@@ -8,6 +8,7 @@ interface BarChartProps {
     data: any[];
     title: string;
     config: DynamicChartConfig;
+    colors?: string[];
 }
 
 const CustomTooltip = ({ active, payload, label, is100Percent }: any) => {
@@ -34,7 +35,7 @@ const CustomTooltip = ({ active, payload, label, is100Percent }: any) => {
     return null;
 };
 
-const BarChart: React.FC<BarChartProps> = ({ data, title, config }) => {
+const BarChart: React.FC<BarChartProps> = ({ data, title, config, colors }) => {
     const {
         category,
         value,
@@ -73,6 +74,8 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, config }) => {
     };
     
     const barRadius: [number, number, number, number] = isStacked ? [0, 0, 0, 0] : (isVertical ? [4, 4, 0, 0] : [0, 4, 4, 0]);
+
+    const chartColors = colors ?? barColors;
 
     const xAxisProps = isVertical
         ? { // Vertical layout: X-axis is the category axis.
@@ -138,7 +141,7 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, config }) => {
                                 key={index}
                                 dataKey={bar.key}
                                 name={bar.name}
-                                fill={barColors[index % barColors.length]}
+                                fill={chartColors[index % chartColors.length]}
                                 stackId={isStacked ? 'a' : undefined}
                                 radius={barRadius}
                             />
