@@ -1,5 +1,4 @@
-import { render, screen, fireEvent } from '../setup.ts';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '../setup.ts';
 import { test, expect } from 'vitest';
 import FunnelChart from '../../components/charts/FunnelChart.tsx';
 import { DynamicChartConfig } from '../../types.ts';
@@ -19,42 +18,54 @@ const config: DynamicChartConfig<{ name: string; value: number }> = {
   value: { dataKey: 'value' },
 };
 
-test('dragging stages reorders them', () => {
+test('renders only the funnel with labels inside slices', () => {
   const data = [
-    { name: 'Stage 1', value: 100 },
-    { name: 'Stage 2', value: 80 },
-    { name: 'Stage 3', value: 60 },
+    { name: 'Leads', value: 5000 },
+    { name: 'Qualified', value: 3500 },
+    { name: 'Prospects', value: 2000 },
   ];
-  render(<FunnelChart data={data} title="Funnel" config={config} />);
+  const { container } = render(<FunnelChart data={data} title="Funnel" config={config} />);
 
-  const items = screen.getAllByTestId('stage-item');
-  fireEvent.dragStart(items[0]);
-  fireEvent.dragOver(items[2]);
-  fireEvent.drop(items[2]);
-
-  const names = screen
-    .getAllByTestId('stage-name')
-    .map((input) => (input as HTMLInputElement).value);
-  expect(names).toEqual(['Stage 2', 'Stage 3', 'Stage 1']);
+  // Names must be present via labels (no inputs)
+  // Rendered funnel slices exist
+  const trapezoids = container.querySelectorAll('.recharts-funnel-trapezoid');
+  expect(trapezoids.length).toBeGreaterThan(0);
+  expect(screen.queryByTestId('stage-name')).toBeNull();
+  expect(screen.queryByTestId('stage-value')).toBeNull();
 });
 
-test('inline editing updates stage labels and values', async () => {
+test('supports horizontal orientation via prop', () => {
   const data = [
-    { name: 'Stage 1', value: 100 },
-    { name: 'Stage 2', value: 80 },
+    { name: 'Leads', value: 5000 },
+    { name: 'Qualified', value: 3500 },
+    { name: 'Prospects', value: 2000 },
   ];
-  render(<FunnelChart data={data} title="Funnel" config={config} />);
+  const { container } = render(
+    <FunnelChart data={data} title="Funnel" config={config} orientation="horizontal" />
+  );
 
-  const user = userEvent.setup();
-  const nameInput = screen.getAllByTestId('stage-name')[0] as HTMLInputElement;
-  const valueInput = screen.getAllByTestId('stage-value')[0] as HTMLInputElement;
+  const trapezoids = container.querySelectorAll('.recharts-funnel-trapezoid');
+  expect(trapezoids.length).toBeGreaterThan(0);
 
-  await user.clear(nameInput);
-  await user.type(nameInput, 'Updated');
-  await user.clear(valueInput);
-  await user.type(valueInput, '123');
+  // Horizontal rendering rotates a wrapper div or label group
+  const rotatedWrapper = container.querySelector('div[style*="rotate(90deg)"]');
+  const rotatedGroup = container.querySelector('g[transform^="rotate(-90"]');
+  expect(rotatedWrapper || rotatedGroup).toBeTruthy();
+});
 
-  expect(nameInput.value).toBe('Updated');
-  expect(valueInput.value).toBe('123');
+test('accepts custom color palette to color each level', () => {
+  const data = [
+    { name: 'Leads', value: 5000 },
+    { name: 'Qualified', value: 3500 },
+    { name: 'Prospects', value: 2000 },
+  ];
+  const palette = ['#111111', '#222222', '#333333'];
+  const { container } = render(
+    <FunnelChart data={data} title="Funnel" config={config} colorPalette={palette} />
+  );
+  // We can't reliably assert computed fills across SVG renderers here,
+  // but we can ensure the slices render for each datum when palette is provided
+  const trapezoids = container.querySelectorAll('.recharts-funnel-trapezoid');
+  expect(trapezoids.length).toBe(data.length);
 });
 

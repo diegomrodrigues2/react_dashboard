@@ -83,7 +83,7 @@ export const DASHBOARD_CONFIG: DashboardConfig = {
         {
             id: 'funnel-vendas',
             component: 'FunnelChart',
-            gridClass: 'col-span-1 lg:col-span-6',
+            gridClass: 'col-span-1 lg:col-span-12',
             title: 'Funil de Vendas',
             config: {
                 sourceDataKey: 'funnelData',

@@ -612,6 +612,7 @@ const Dashboard: React.FC = () => {
             isBounded={!isEditing}
             isDraggable={isEditing}
             isResizable={isEditing}
+            resizeHandles={['se']}
             isDroppable={isEditing}
             onDrop={handleDrop}
             droppingItem={{ i: '__dropping', w: 6, h: 6 }}
@@ -647,7 +648,29 @@ const Dashboard: React.FC = () => {
                 );
             })}
         </ReactGridLayout>
-        {isEditing && <style>{`.dashboard-editing .react-grid-placeholder{background:rgba(0,163,224,0.2);border:2px dashed #00A3E0;}`}</style>}
+        {isEditing && (
+          <style>{`
+            .dashboard-editing .react-grid-placeholder {
+              background: rgba(0,163,224,0.2);
+              border: 2px dashed #00A3E0;
+            }
+            /* Garante que o handle fique exatamente no canto inferior direito do item */
+            .dashboard-editing .react-grid-item { position: relative; }
+            .dashboard-editing .react-resizable-handle {
+              right: 0;
+              bottom: 0;
+              width: 14px;
+              height: 14px;
+              padding: 0 !important; /* remove offset do CSS padrão do react-resizable */
+              background: none; /* remove a imagem padrão para evitar desalinhamento visual */
+              border-right: 3px solid #00A3E0;
+              border-bottom: 3px solid #00A3E0;
+              box-sizing: content-box;
+              cursor: se-resize;
+              z-index: 10;
+            }
+          `}</style>
+        )}
         </>
       )}
       <Modal

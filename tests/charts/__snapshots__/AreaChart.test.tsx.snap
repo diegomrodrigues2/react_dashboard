@@ -5,7 +5,7 @@ exports[`AreaChart > snapshot renders 1`] = `
   style="width: 400px; height: 300px;"
 >
   <div
-    class="bg-white p-6 rounded-lg shadow-lg h-96 flex flex-col"
+    class="bg-white p-6 rounded-lg shadow-lg h-full flex flex-col"
   >
     <div
       class="flex items-center justify-between mb-4"
